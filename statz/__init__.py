@@ -1,3 +1,3 @@
 from . import stats
 
-__all__ = ["stats"]
+__all__ = ["get_system_specs", "get_hardware_usage"]

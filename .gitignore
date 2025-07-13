@@ -3,3 +3,4 @@ dist
 test.py
 src
 statz/__pycache__
+statz.egg-info

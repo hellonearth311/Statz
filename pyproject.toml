@@ -1,16 +1,20 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "psutil", "wmi"]
+requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [project]
-name = "statz"  # must be unique on PyPI!
-version = "0.2.2"
+name = "statz"
+version = "0.2.4"
 description = "Cross-platform system stats made easy"
 readme = "README.md"
 requires-python = ">=3.7"
 license = {text = "MIT"}
 authors = [
-  {name = "Swarit Narang", email = "narangswarit02@gmail.com"}  # optional email
+  {name = "Swarit Narang", email = "narangswarit02@gmail.com"}
+]
+dependencies = [
+  "psutil",
+  "wmi",
 ]
 classifiers = [
   "Programming Language :: Python :: 3",
@@ -21,3 +25,7 @@ classifiers = [
 [project.urls]
 "Homepage" = "https://github.com/hellonearth311/Statz"
 "Bug Tracker" = "https://github.com/hellonearth311/Statz/issues"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["statz*"]

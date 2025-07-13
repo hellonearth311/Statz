@@ -1,0 +1,3 @@
+include statz/*.py
+include statz/**/*.py
+recursive-include statz *.py
