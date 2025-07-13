@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "statz"  # must be unique on PyPI!
-version = "0.2.0"
+version = "0.2.2"
 description = "Cross-platform system stats made easy"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -19,5 +19,5 @@ classifiers = [
 ]
 
 [project.urls]
-"Homepage" = "https://github.com/yourusername/statz"
-"Bug Tracker" = "https://github.com/yourusername/statz/issues"
+"Homepage" = "https://github.com/hellonearth311/Statz"
+"Bug Tracker" = "https://github.com/hellonearth311/Statz/issues"
