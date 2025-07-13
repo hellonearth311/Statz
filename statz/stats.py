@@ -1,7 +1,7 @@
-from _getMacInfo import _get_mac_specs
-from _getWindowsInfo import _get_windows_specs
-from _getLinuxInfo import _get_linux_specs
-from _getUsage import _get_usage
+from ._getMacInfo import _get_mac_specs
+from ._getWindowsInfo import _get_windows_specs
+from ._getLinuxInfo import _get_linux_specs
+from ._getUsage import _get_usage
 
 import platform
 
