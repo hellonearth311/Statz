@@ -1,1 +1,5 @@
 venv
+dist
+test.py
+src
+statz/__pycache__

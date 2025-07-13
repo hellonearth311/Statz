@@ -1,5 +1,5 @@
 [build-system]
-requires = ["setuptools>=61.0", "wheel", "psutil", "subprocess", "re", "wmi"]
+requires = ["setuptools>=61.0", "wheel", "psutil", "wmi"]
 build-backend = "setuptools.build_meta"
 
 [project]

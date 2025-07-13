@@ -3,7 +3,7 @@ import psutil
 import subprocess
 import re
 
-def get_mac_specs():
+def _get_mac_specs():
     '''
     Get system specifications for Mac systems.\n
     Returns 4 dictionaries: os_info, cpu_info, mem_info, disk_info

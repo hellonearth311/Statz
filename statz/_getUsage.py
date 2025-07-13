@@ -1,7 +1,7 @@
 import psutil
 import time
 
-def get_usage():
+def _get_usage():
     '''
     Get real-time usage data for most system components. \n
     GPU Usage is **not** supported due to lack of a Python binding for AMD and Intel GPUs.\n

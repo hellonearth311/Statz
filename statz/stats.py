@@ -1,7 +1,7 @@
-from _getMacInfo import get_mac_specs
-from _getWindowsInfo import get_windows_specs
-from _getLinuxInfo import get_linux_specs
-from _getUsage import get_usage
+from _getMacInfo import _get_mac_specs
+from _getWindowsInfo import _get_windows_specs
+from _getLinuxInfo import _get_linux_specs
+from _getUsage import _get_usage
 
 import platform
 
@@ -33,7 +33,7 @@ def get_hardware_usage():
         { "percent": percent_left, "pluggedIn": is_plugged_in, "timeLeftMins": minutes_left (2147483640 = unlimited) }\n
     ''' 
     if platform.system() == "Darwin" or platform.system() == "Linux" or platform.system() == "Windows":
-        return get_usage()
+        return _get_usage()
     else:
         raise OSError("Unsupported operating system")
 
@@ -147,11 +147,11 @@ def get_system_specs():
     '''
 
     if platform.system() == "Darwin": # macOS
-        return get_mac_specs()
+        return _get_mac_specs()
     elif platform.system() == "Linux": # Linux
-        return get_linux_specs
+        return _get_linux_specs()
     elif platform.system() == "Windows": # Windows
-        return get_windows_specs()
+        return _get_windows_specs()
     else:
         raise OSError("Unsupported operating system")
 

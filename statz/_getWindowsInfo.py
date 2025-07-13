@@ -1,7 +1,7 @@
 try:
     import wmi
 
-    def get_windows_specs():
+    def _get_windows_specs():
         '''
         Get all of the specifications of your Windows system.\n
         It returns a list called specs. Inside the list, there are 6 items:\n
@@ -182,5 +182,5 @@ try:
         # return everything
         return cpu_data, gpu_data_list, ram_data_list, storage_data_list, network_data, battery_data
 except:
-    def get_windows_specs():
+    def _get_windows_specs():
         return None

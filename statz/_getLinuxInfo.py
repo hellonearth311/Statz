@@ -3,7 +3,7 @@ import psutil
 import subprocess
 import re
 
-def get_linux_specs():
+def _get_linux_specs():
     '''
     Get system specifications for Linux systems.\n
     Returns 4 dictionaries: os_info, cpu_info, mem_info, disk_info
