@@ -1,0 +1,23 @@
+[build-system]
+requires = ["setuptools>=61.0", "wheel", "psutil", "subprocess", "re", "wmi"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "statz"  # must be unique on PyPI!
+version = "0.1.0"
+description = "Cross-platform system stats made easy"
+readme = "README.md"
+requires-python = ">=3.7"
+license = {text = "MIT"}
+authors = [
+  {name = "Swarit Narang", email = "narangswarit02@gmail.com"}  # optional email
+]
+classifiers = [
+  "Programming Language :: Python :: 3",
+  "Operating System :: OS Independent",
+  "License :: OSI Approved :: MIT License",
+]
+
+[project.urls]
+"Homepage" = "https://github.com/yourusername/statz"
+"Bug Tracker" = "https://github.com/yourusername/statz/issues"
