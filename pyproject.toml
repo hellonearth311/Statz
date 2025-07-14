@@ -12,6 +12,7 @@ license = {text = "MIT"}
 authors = [
   {name = "Swarit Narang", email = "narangswarit02@gmail.com"}
 ]
+
 dependencies = [
   "psutil",
   "wmi",
@@ -21,6 +22,9 @@ classifiers = [
   "Operating System :: OS Independent",
   "License :: OSI Approved :: MIT License",
 ]
+
+[project.scripts]
+statz = "statz.cli:main"
 
 [project.urls]
 "Homepage" = "https://github.com/hellonearth311/Statz"
