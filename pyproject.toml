@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "statz"
-version = "0.3.0"
+version = "0.3.1"
 description = "Cross-platform system stats made easy"
 readme = "README.md"
 requires-python = ">=3.7"
@@ -16,6 +16,7 @@ authors = [
 dependencies = [
   "psutil",
   "wmi",
+  "colorama"
 ]
 classifiers = [
   "Programming Language :: Python :: 3",

@@ -37,9 +37,6 @@ def _get_usage():
         cpu_usage = {}
         for i, core in enumerate(cpu_usage_list, 1):
             cpu_usage[f"core{i}"] = core
-
-        print("cpu_usage")
-        print(cpu_usage)
     except:
         cpu_usage = None
     try:
@@ -52,9 +49,6 @@ def _get_usage():
             "free": round(ram.available / (1024 ** 2), 1),
             "percent": ram.percent
         }
-
-        print("ram usage")
-        print(ram_usage)
     except:
         ram_usage = None
 
@@ -79,10 +73,6 @@ def _get_usage():
                 "readSpeed": round(read_speed, 2),
                 "writeSpeed": round(write_speed, 2),
             })
-
-        print("disk usages")
-        for disk in disk_usages:
-            print(disk)
     except:
         disk_usages = None
 
@@ -99,9 +89,6 @@ def _get_usage():
             "up": upload_speed,
             "down": download_speed
         }
-
-        print("network usage")
-        print(network_usage)
     except:
         network_usage = None
 
@@ -113,9 +100,6 @@ def _get_usage():
             "pluggedIn": battery.power_plugged,
             "timeLeftMins": battery.secsleft // 60 if battery.secsleft != psutil.POWER_TIME_UNLIMITED else 2147483640
         }
-
-        print("battery usage")
-        print(battery_usage)
     except:
         battery_usage = None
 

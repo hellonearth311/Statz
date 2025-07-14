@@ -23,15 +23,42 @@ pip install statz
 
 ## 📝 Changelog
 
-### v0.3.0 – Command Line Mode 💻
+### v0.3.1 – CLI Options and Cool Colors 🖥️ 🎨
 
-- ✨ Added command-line interface (CLI) support!
+- ⌨️ Added more CLI Options!
   - Run `statz` from your terminal after install
   - Available flags:
     - `--specs` → show all specs
     - `--usage` → show all usage
-    - `--json` → output result in a clean JSON format
-  - Example: `statz --specs --json`
 
-- 📄 Prep for more CLI functionality in the future, such as getting dedicated specs for CPU, RAM, etc..
+    - `--cpu` → show cpu usage/specs
+    - `--gpu` → show gpu usage/specs
+    - `--ram` → show ram usage/specs
+    - `--os` → show os usage/specs
+    - `--disk` → show disk usage/specs
+    - `--network` → show network usage/specs
+    - `--battery` → show battery usage/specs
+    
+    - `--json` → output result in a clean JSON format
+    - `--out` → output result into a JSON file
+  - Example: `statz --specs --cpu --gpu --out`
+  - Output:
+    ```
+    File: statz_export_(date)_(time)
+    {
+      "cpu": {
+        "processor": "arm",
+        "coreCountPhysical": 12,
+        "coreCountLogical": 12,
+        "cpuName": "Apple M4 Pro",
+        "cpuFrequency": "Unknown"
+      },
+      "gpu": {
+        "error": "GPU information not available on Darwin"
+      }
+    }
+    ```
+
+- 🎨 Colored error mesages!
+  - For unsupported types, such as GPU information on MacOS, errors will be printed in red!
 
