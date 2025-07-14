@@ -21,6 +21,11 @@ Works on **macOS**, **Linux**, and **Windows**, and handles OS-specific madness 
 pip install statz
 ```
 
+## 🗂️ Links
+[PyPi Project 🐍](https://pypi.org/project/statz/)
+
+[Github Repository 🧑‍💻](https://github.com/hellonearth311/Statz)
+
 ## 📝 Changelog
 
 ### v0.3.1 – CLI Options and Cool Colors 🖥️ 🎨
