@@ -4,6 +4,8 @@
 
 Works on **macOS**, **Linux**, and **Windows**, and handles OS-specific madness under the hood so you don’t have to.
 
+![statz logo](img/logo.png)
+
 ---
 
 ## ✨ Features

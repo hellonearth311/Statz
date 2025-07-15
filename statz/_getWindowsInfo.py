@@ -184,3 +184,6 @@ try:
 except:
     def _get_windows_specs():
         return None
+
+    def _get_windows_temps():
+        pass

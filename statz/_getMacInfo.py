@@ -113,3 +113,6 @@ def _get_mac_specs():
     disk_info["freeSpace"] = f"{disk_usage.free / (1024**3):.2f} GB"
 
     return os_info, cpu_info, mem_info, disk_info
+
+def _get_mac_temps():
+    pass
