@@ -104,3 +104,44 @@ def _get_usage():
         battery_usage = None
 
     return [cpu_usage, ram_usage, disk_usages, network_usage, battery_usage]
+
+def _get_top_n_processes(n=5, type="cpu"):
+    try:
+        int(n)
+    except:
+        raise TypeError(f"n must be int, not {type(n)}")
+    
+    processes = []
+    for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
+        try:
+            proc_info = proc.info
+            # Filter out processes with None values
+            if type == "cpu" and proc_info['cpu_percent'] is not None:
+                processes.append(proc_info)
+            elif type == "mem" and proc_info['memory_percent'] is not None:
+                processes.append(proc_info)
+        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+            pass
+    
+    if type == "cpu":
+        top_processes = sorted(processes, key=lambda p: p['cpu_percent'] or 0, reverse=True)[:n]
+        top_processes_list = []
+        for p in top_processes:
+            top_processes_list.append({
+                'pid': p['pid'],
+                'name': p['name'],
+                'usage': round(float(p['cpu_percent'] or 0), 2)
+            })
+        return top_processes_list
+    elif type == "mem":
+        top_processes = sorted(processes, key=lambda p: p['memory_percent'] or 0, reverse=True)[:n]
+        top_processes_list = []
+        for p in top_processes:
+            top_processes_list.append({
+                'pid': p['pid'],
+                'name': p['name'],
+                'usage': round(float(p['memory_percent'] or 0), 2)
+            })
+        return top_processes_list
+    else:
+        raise TypeError(f"Type must be cpu or mem, not {type}")

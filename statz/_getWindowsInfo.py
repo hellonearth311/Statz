@@ -1,3 +1,4 @@
+import subprocess
 try:
     import wmi
 
@@ -181,6 +182,154 @@ try:
 
         # return everything
         return cpu_data, gpu_data_list, ram_data_list, storage_data_list, network_data, battery_data
+    
+    def _get_windows_temps():
+        """
+        Get Windows temperature using multiple methods for better compatibility
+        """
+        try:
+            ps_script = """
+            $t = Get-WmiObject MSAcpi_ThermalZoneTemperature -Namespace "root/wmi"
+            if ($t) {
+                $t | ForEach-Object {
+                    $temp = $_.CurrentTemperature / 10 - 273.15
+                    Write-Host "ThermalZone $($_.InstanceName): $temp"
+                }
+            }
+            """
+            
+            process = subprocess.Popen(['powershell.exe', '-Command', ps_script], 
+                                        stdout=subprocess.PIPE, 
+                                        stderr=subprocess.PIPE,
+                                        text=True, 
+                                        creationflags=subprocess.CREATE_NO_WINDOW)
+            
+            stdout, stderr = process.communicate()
+            
+            if process.returncode == 0 and stdout.strip():
+                temps = {}
+                for line in stdout.strip().split('\n'):
+                    if 'ThermalZone' in line and ':' in line:
+                        try:
+                            parts = line.split(': ')
+                            if len(parts) == 2:
+                                zone_name = parts[0].strip()
+                                temp = float(parts[1].strip())
+                                temps[zone_name] = temp
+                        except:
+                            continue
+                if temps:
+                    return temps
+        except:
+            pass
+        
+        try:
+            ps_script = """
+            $probes = Get-WmiObject -Class Win32_TemperatureProbe
+            if ($probes) {
+                $probes | ForEach-Object {
+                    if ($_.CurrentReading -ne $null) {
+                        $temp = $_.CurrentReading / 10 - 273.15
+                        Write-Host "TempProbe $($_.Name): $temp"
+                    }
+                }
+            }
+            """
+            
+            process = subprocess.Popen(['powershell.exe', '-Command', ps_script], 
+                                        stdout=subprocess.PIPE, 
+                                        stderr=subprocess.PIPE,
+                                        text=True, 
+                                        creationflags=subprocess.CREATE_NO_WINDOW)
+            
+            stdout, stderr = process.communicate()
+            
+            if process.returncode == 0 and stdout.strip():
+                temps = {}
+                for line in stdout.strip().split('\n'):
+                    if 'TempProbe' in line and ':' in line:
+                        try:
+                            parts = line.split(': ')
+                            if len(parts) == 2:
+                                probe_name = parts[0].strip()
+                                temp = float(parts[1].strip())
+                                temps[probe_name] = temp
+                        except:
+                            continue
+                if temps:
+                    return temps
+        except:
+            pass
+        
+        try:
+            ps_script = """
+            $sensors = Get-WmiObject -Namespace "root/OpenHardwareMonitor" -Class Sensor | Where-Object { $_.SensorType -eq "Temperature" }
+            if ($sensors) {
+                $sensors | ForEach-Object {
+                    Write-Host "$($_.Name): $($_.Value)"
+                }
+            }
+            """
+            
+            process = subprocess.Popen(['powershell.exe', '-Command', ps_script], 
+                                        stdout=subprocess.PIPE, 
+                                        stderr=subprocess.PIPE,
+                                        text=True, 
+                                        creationflags=subprocess.CREATE_NO_WINDOW)
+            
+            stdout, stderr = process.communicate()
+            
+            if process.returncode == 0 and stdout.strip():
+                temps = {}
+                for line in stdout.strip().split('\n'):
+                    if ':' in line:
+                        try:
+                            parts = line.split(': ')
+                            if len(parts) == 2:
+                                sensor_name = parts[0].strip()
+                                temp = float(parts[1].strip())
+                                temps[sensor_name] = temp
+                        except:
+                            continue
+                if temps:
+                    return temps
+        except:
+            pass
+        
+        try:
+            ps_script = """
+            $thermal = Get-WmiObject -Query "SELECT * FROM Win32_PerfRawData_Counters_ThermalZoneInformation"
+            if ($thermal) {
+                $thermal | ForEach-Object {
+                    if ($_.Temperature -ne $null) {
+                        $temp = $_.Temperature / 10 - 273.15
+                        Write-Host "Thermal: $temp"
+                    }
+                }
+            }
+            """
+            
+            process = subprocess.Popen(['powershell.exe', '-Command', ps_script], 
+                                        stdout=subprocess.PIPE, 
+                                        stderr=subprocess.PIPE,
+                                        text=True, 
+                                        creationflags=subprocess.CREATE_NO_WINDOW)
+            
+            stdout, stderr = process.communicate()
+            
+            if process.returncode == 0 and stdout.strip():
+                for line in stdout.strip().split('\n'):
+                    if 'Thermal:' in line:
+                        try:
+                            temp = float(line.split(': ')[1].strip())
+                            return {'thermal': temp}
+                        except:
+                            continue
+        except:
+            pass
+        
+        return None
+
 except:
     def _get_windows_specs():
         return None

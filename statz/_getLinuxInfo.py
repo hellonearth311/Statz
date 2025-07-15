@@ -107,10 +107,91 @@ def _get_linux_specs():
 
     disk_usage = psutil.disk_usage('/')
     disk_info["totalSpace"] = f"{disk_usage.total / (1024**3):.2f} GB"
-    disk_info["usedSpace"] = f"{disk_usage.used / (1024**3):.2f} GB"
+    disk_info["usedSpace"] = f"{disk_usage.used / ((1024**3) / 10):.2f} GB"
     disk_info["freeSpace"] = f"{disk_usage.free / (1024**3):.2f} GB"
 
     return os_info, cpu_info, mem_info, disk_info
 
-def _get_mac_temps():
-    pass
+def _get_linux_temps():
+    temps = {}
+    
+    try:
+        sensors = psutil.sensors_temperatures()
+        if sensors:
+            for sensor_name, sensor_list in sensors.items():
+                for sensor in sensor_list:
+                    label = sensor.label if sensor.label else sensor_name
+                    if sensor.current:
+                        temps[label] = f"{sensor.current:.1f}°C"
+                        
+                        if sensor.high:
+                            temps[f"{label} (High)"] = f"{sensor.high:.1f}°C"
+                        if sensor.critical:
+                            temps[f"{label} (Critical)"] = f"{sensor.critical:.1f}°C"
+    except:
+        pass
+    
+    if not temps:
+        try:
+            import os
+            import glob
+            
+            thermal_zones = glob.glob('/sys/class/thermal/thermal_zone*/temp')
+            for zone_path in thermal_zones:
+                try:
+                    with open(zone_path, 'r') as f:
+                        temp_millidegree = int(f.read().strip())
+                        temp_celsius = temp_millidegree / 1000.0
+                        
+                        zone_dir = os.path.dirname(zone_path)
+                        zone_name = os.path.basename(zone_dir)
+                        
+                        try:
+                            with open(os.path.join(zone_dir, 'type'), 'r') as type_file:
+                                zone_type = type_file.read().strip()
+                                sensor_name = f"{zone_type} ({zone_name})"
+                        except:
+                            sensor_name = zone_name
+                        
+                        temps[sensor_name] = f"{temp_celsius:.1f}°C"
+                except:
+                    continue
+        except:
+            pass
+    
+    if not temps:
+        try:
+            result = subprocess.run(['sensors', '-A'], capture_output=True, text=True)
+            if result.returncode == 0:
+                lines = result.stdout.splitlines()
+                current_chip = None
+                
+                for line in lines:
+                    line = line.strip()
+                    if not line:
+                        continue
+                    
+                    if ':' not in line and not line.startswith(' '):
+                        current_chip = line
+                        continue
+                    
+                    if '°C' in line and ':' in line:
+                        parts = line.split(':', 1)
+                        if len(parts) == 2:
+                            sensor_name = parts[0].strip()
+                            temp_part = parts[1].strip()
+                            
+                            temp_match = re.search(r'([+-]?\d+\.?\d*)°C', temp_part)
+                            if temp_match:
+                                temp_value = float(temp_match.group(1))
+                                
+                                if current_chip:
+                                    full_name = f"{current_chip} - {sensor_name}"
+                                else:
+                                    full_name = sensor_name
+                                
+                                temps[full_name] = f"{temp_value:.1f}°C"
+        except:
+            pass
+    
+    return temps if temps else {"error": "No temperature sensors found"}

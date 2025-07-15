@@ -1,7 +1,7 @@
-from ._getMacInfo import _get_mac_specs
-from ._getWindowsInfo import _get_windows_specs
-from ._getLinuxInfo import _get_linux_specs
-from ._getUsage import _get_usage
+from ._getMacInfo import _get_mac_specs, _get_mac_temps
+from ._getWindowsInfo import _get_windows_specs, _get_windows_temps
+from ._getLinuxInfo import _get_linux_specs, _get_linux_temps
+from ._getUsage import _get_usage, _get_top_n_processes
 
 import platform
 
@@ -32,7 +32,9 @@ def get_hardware_usage():
     - battery_usage (dict):\n
         { "percent": percent_left, "pluggedIn": is_plugged_in, "timeLeftMins": minutes_left (2147483640 = unlimited) }\n
     ''' 
-    if platform.system() == "Darwin" or platform.system() == "Linux" or platform.system() == "Windows":
+    operatingSystem = platform.system()
+
+    if operatingSystem == "Darwin" or operatingSystem == "Linux" or operatingSystem == "Windows":
         return _get_usage()
     else:
         raise OSError("Unsupported operating system")
@@ -145,16 +147,94 @@ def get_system_specs():
     "freeSpace": Free space in GB,\n
     }
     '''
+    operatingSystem = platform.system()
 
-    if platform.system() == "Darwin": # macOS
+    if operatingSystem == "Darwin": # macOS
         return _get_mac_specs()
-    elif platform.system() == "Linux": # Linux
+    elif operatingSystem == "Linux": # Linux
         return _get_linux_specs()
-    elif platform.system() == "Windows": # Windows
+    elif operatingSystem == "Windows": # Windows
         return _get_windows_specs()
     else:
         raise OSError("Unsupported operating system")
 
+def get_system_temps():
+    '''
+    Get temperature readings from system sensors across all platforms.
+    
+    This function provides cross-platform temperature monitoring by detecting the operating system
+    and calling the appropriate platform-specific temperature reading function.
+    
+    Returns:
+        dict or None: Temperature data structure varies by platform:
+        
+        **macOS**: Dictionary with sensor names as keys and temperatures in Celsius as values
+        Example: {"CPU": 45.2, "GPU": 38.5, "Battery": 32.1}
+        
+        **Linux**: Dictionary with sensor names as keys and temperatures in Celsius as values
+        Example: {"coretemp-isa-0000": 42.0, "acpi-0": 35.5}
+        
+        **Windows**: Dictionary with thermal zone names as keys and temperatures in Celsius as values
+        Example: {"ThermalZone _TZ.TZ00": 41.3, "ThermalZone _TZ.TZ01": 38.9}
+        
+        Returns None if temperature sensors are not available or accessible on the system.
+    
+    Raises:
+        Exception: If temperature reading fails due to system access issues or sensor unavailability.
+    
+    Note:
+        - Temperature readings may require elevated privileges on some systems
+        - Not all systems expose temperature sensors through standard interfaces
+        - Results vary based on available hardware sensors and system configuration
+    '''
+    operatingSystem = platform.system()
+
+    if operatingSystem == "Darwin": # macOS
+        return _get_mac_temps()
+    elif operatingSystem == "Linux":  # Linux
+        return _get_linux_temps()
+    elif operatingSystem == "Windows": # Windows:
+        return _get_windows_temps()
+
+def get_top_n_processes(n=5, type="cpu"):
+    '''
+    Get the top N processes sorted by CPU or memory usage.
+    
+    This function retrieves a list of the most resource-intensive processes currently running
+    on the system, sorted by either CPU usage percentage or memory usage percentage.
+    
+    Args:
+        n (int, optional): Number of top processes to return. Defaults to 5.
+        type (str, optional): Sort criteria - either "cpu" for CPU usage or "mem" for memory usage. 
+                             Defaults to "cpu".
+    
+    Returns:
+        list: List of dictionaries containing process information, sorted by the specified usage type.
+        Each dictionary contains:
+        - "pid" (int): Process ID
+        - "name" (str): Process name/command
+        - "usage" (float): CPU percentage (0-100) or memory percentage (0-100) depending on type
+        
+        Example:
+        [
+            {"pid": 1234, "name": "chrome", "usage": 15.2},
+            {"pid": 5678, "name": "python", "usage": 8.7},
+            {"pid": 9012, "name": "code", "usage": 5.3}
+        ]
+    
+    Raises:
+        TypeError: If n is not an integer or type is not "cpu" or "mem".
+        
+    Note:
+        - CPU usage is measured as a percentage of total CPU capacity
+        - Memory usage is measured as a percentage of total system memory
+        - Processes with None values for the requested metric are filtered out
+        - Some processes may not be accessible due to permission restrictions
+    '''
+    return _get_top_n_processes(n, type)
+
 if __name__ == "__main__":
     print(get_hardware_usage())
     print(get_system_specs())
+    print(get_system_temps())
+    print(get_top_n_processes())

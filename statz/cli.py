@@ -48,6 +48,24 @@ def get_component_specs(args):
                 result["battery"] = all_specs[5]
             else:
                 result["battery"] = {"error": "Battery information not available on this system"}
+        if args.temp:
+            try:
+                temp_data = stats.get_system_temps()
+                if temp_data:
+                    result["temperature"] = temp_data
+                else:
+                    result["temperature"] = {"error": "Temperature information not available on this system"}
+            except Exception as e:
+                result["temperature"] = {"error": f"Temperature reading failed: {str(e)}"}
+        if args.processes:
+            try:
+                process_data = stats.get_top_n_processes(args.process_count, args.process_type)
+                if process_data:
+                    result["processes"] = process_data
+                else:
+                    result["processes"] = {"error": "Process information not available on this system"}
+            except Exception as e:
+                result["processes"] = {"error": f"Process monitoring failed: {str(e)}"}
                 
     else:
         # macOS and Linux return: os_info, cpu_info, mem_info, disk_info
@@ -68,6 +86,24 @@ def get_component_specs(args):
             result["network"] = {"error": f"Network specs not available on {current_os}"}
         if args.battery:
             result["battery"] = {"error": f"Battery specs not available on {current_os}"}
+        if args.temp:
+            try:
+                temp_data = stats.get_system_temps()
+                if temp_data:
+                    result["temperature"] = temp_data
+                else:
+                    result["temperature"] = {"error": "Temperature information not available on this system"}
+            except Exception as e:
+                result["temperature"] = {"error": f"Temperature reading failed: {str(e)}"}
+        if args.processes:
+            try:
+                process_data = stats.get_top_n_processes(args.process_count, args.process_type)
+                if process_data:
+                    result["processes"] = process_data
+                else:
+                    result["processes"] = {"error": "Process information not available on this system"}
+            except Exception as e:
+                result["processes"] = {"error": f"Process monitoring failed: {str(e)}"}
     
     return result
 
@@ -95,6 +131,24 @@ def get_component_usage(args):
             result["network"] = all_usage[3]
         if args.battery:
             result["battery"] = all_usage[4]
+        if args.temp:
+            try:
+                temp_data = stats.get_system_temps()
+                if temp_data:
+                    result["temperature"] = temp_data
+                else:
+                    result["temperature"] = {"error": "Temperature information not available on this system"}
+            except Exception as e:
+                result["temperature"] = {"error": f"Temperature reading failed: {str(e)}"}
+        if args.processes:
+            try:
+                process_data = stats.get_top_n_processes(args.process_count, args.process_type)
+                if process_data:
+                    result["processes"] = process_data
+                else:
+                    result["processes"] = {"error": "Process information not available on this system"}
+            except Exception as e:
+                result["processes"] = {"error": f"Process monitoring failed: {str(e)}"}
             
     except Exception as e:
         result = {"error": f"Usage data not available on {current_os}: {str(e)}"}
@@ -108,6 +162,7 @@ def main():
     parser = argparse.ArgumentParser(description="Get system info with statz.")
     parser.add_argument("--specs", action="store_true", help="Get system specs")
     parser.add_argument("--usage", action="store_true", help="Get system utilization")
+    parser.add_argument("--processes", action="store_true", help="Get top processes")
 
     parser.add_argument("--os", action="store_true", help="Get OS specs/usage")
     parser.add_argument("--cpu", action="store_true", help="Get CPU specs/usage")
@@ -116,18 +171,39 @@ def main():
     parser.add_argument("--disk", action="store_true", help="Get disk specs/usage")
     parser.add_argument("--network", action="store_true", help="Get network specs/usage")
     parser.add_argument("--battery", action="store_true", help="Get battery specs/usage")
+    parser.add_argument("--temp", action="store_true", help="Get temperature readings")
 
     parser.add_argument("--json", action="store_true", help="Output specs/usage as a JSON")
     parser.add_argument("--out", action="store_true", help="Write specs/usage into a JSON file")
+    
+    # Process monitoring options
+    parser.add_argument("--process-count", type=int, default=5, help="Number of top processes to show (default: 5)")
+    parser.add_argument("--process-type", choices=["cpu", "mem"], default="cpu", help="Sort processes by CPU or memory usage (default: cpu)")
 
     args = parser.parse_args()
 
     # Check if any component flags are used
-    component_flags = [args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery]
+    component_flags = [args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes]
     any_component_requested = any(component_flags)
 
     # Determine what data to retrieve
-    if args.specs:
+    if args.temp and not args.specs and not args.usage and not args.processes:
+        # Handle standalone temperature command
+        try:
+            specsOrUsage = {"temperature": stats.get_system_temps()}
+            if not specsOrUsage["temperature"]:
+                specsOrUsage["temperature"] = {"error": "Temperature information not available on this system"}
+        except Exception as e:
+            specsOrUsage = {"temperature": {"error": f"Temperature reading failed: {str(e)}"}}
+    elif args.processes and not args.specs and not args.usage and not args.temp:
+        # Handle standalone processes command
+        try:
+            specsOrUsage = {"processes": stats.get_top_n_processes(args.process_count, args.process_type)}
+            if not specsOrUsage["processes"]:
+                specsOrUsage["processes"] = {"error": "Process information not available on this system"}
+        except Exception as e:
+            specsOrUsage = {"processes": {"error": f"Process monitoring failed: {str(e)}"}}
+    elif args.specs:
         if any_component_requested:
             # Get specific component specs
             specsOrUsage = get_component_specs(args)

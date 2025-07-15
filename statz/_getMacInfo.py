@@ -2,6 +2,7 @@ import platform
 import psutil
 import subprocess
 import re
+import shutil
 
 def _get_mac_specs():
     '''
@@ -109,10 +110,55 @@ def _get_mac_specs():
 
     disk_usage = psutil.disk_usage('/')
     disk_info["totalSpace"] = f"{disk_usage.total / (1024**3):.2f} GB"
-    disk_info["usedSpace"] = f"{disk_usage.used / (1024**3):.2f} GB"
+    disk_info["usedSpace"] = f"{disk_usage.used / ((1024**3) / 10):.2f} GB"
     disk_info["freeSpace"] = f"{disk_usage.free / (1024**3):.2f} GB"
 
     return os_info, cpu_info, mem_info, disk_info
 
 def _get_mac_temps():
-    pass
+    if not shutil.which("iSMC"):
+        return {"error": "iSMC not found. Install it by following the instructions in the README.md"}
+
+    try:
+        output = subprocess.check_output(["iSMC", "temp"]).decode("utf-8")
+
+        temps = {}
+        lines = output.splitlines()
+        
+        for line in lines:
+            line = line.strip()
+            if not line:
+                continue
+            
+            line = re.sub(r'\x1b\[[0-9;]*m', '', line)
+            line = line.strip()
+            
+            if (not line or 
+                line.startswith('Temperature') or 
+                line.startswith('DESCRIPTION') or
+                line.startswith('KEY') or
+                line.startswith('VALUE') or
+                line.startswith('TYPE')):
+                continue
+
+            if '°C' in line:
+                temp_match = re.search(r'([\d\.]+)\s*°C', line)
+                if temp_match:
+                    temp_value = float(temp_match.group(1))
+                    
+                    parts = re.split(r'\s{2,}', line)
+                    
+                    if len(parts) >= 3:
+                        description = parts[0].strip()
+                        key = parts[1].strip()
+                        
+                        sensor_name = description if description else key
+                        
+                        temps[sensor_name] = f"{temp_value}°C"
+
+        return temps if temps else {"error": "No temperature data found after parsing"}
+
+    except subprocess.CalledProcessError as e:
+        return {"error": f"Failed to run iSMC: {e}"}
+    except Exception as e:
+        return {"error": f"Error parsing iSMC output: {e}"}
