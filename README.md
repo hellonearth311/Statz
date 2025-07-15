@@ -30,9 +30,9 @@ pip install statz
 
 ## 📝 Changelog
 
-### v0.4.0 – Temperatures, Top Processes, and Bug Squashing 🌡️🧪🐞
+### v0.4.0 – Temperatures, Top Processes, and Bug Squashing 🔥
 
-- Added temperature monitoring
+- 🌡️ Added temperature monitoring
   - Run ```stats.get_system_temps()``` to get a detailed dictionary of sensors
 
   - Run ```statz --temp``` to get temps out in the console like this:
@@ -71,7 +71,7 @@ pip install statz
     PMU tcal: 51.82°C
     etc...
     ```
-- Added top ```n``` processes monitoring
+- 🧪 Added top ```n``` processes monitoring
   - Get top ```n``` processes using ```get_top_n_proccesses(n, type)``` where ```type``` = ```"cpu"``` or ```"mem"```.
   - Run ```statz --processes --process-count {process count} --process-type {"cpu", "mem"}``` to get an output like this
     ```
@@ -82,7 +82,7 @@ pip install statz
       Device 4: {'pid': 560, 'name': 'cfprefsd', 'usage': 0.0}
       Device 5: {'pid': 563, 'name': 'UserEventAgent', 'usage': 0.0}
     ```
-- Squashed some bugs
+- 🐞 Squashed some bugs
   - Fixed storage calculation bugs on macOS and Linux
   - Added better exception handling to the program
 ## 📝 Side Note
