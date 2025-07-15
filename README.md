@@ -4,7 +4,8 @@
 
 Works on **macOS**, **Linux**, and **Windows**, and handles OS-specific madness under the hood so you don’t have to.
 
-![statz logo](img/logo.png)
+<img src="img/logo.png" alt="drawing" width="200"/>
+
 
 ---
 
@@ -13,7 +14,7 @@ Works on **macOS**, **Linux**, and **Windows**, and handles OS-specific madness 
 - 📊 Get real-time CPU, RAM, and disk usage
 - 💻 Fetch detailed system specifications (CPU, RAM, OS, etc.)
 - 🧠 Automatically handles platform-specific logic
-- 🧼 Super clean API — just two functions, no fluff
+- 🧼 Super clean API — just a few functions, no fluff
 
 ---
 
