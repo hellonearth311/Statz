@@ -43,7 +43,17 @@ def get_system_specs():
     '''
     # Get system specs on all platforms.\n
     ## On Windows:
-    Returns 6 lists/dictionaries: cpu_data, gpu_data_list, ram_data_list, storage_data_list, network_data, and battery_data
+    Returns 7 lists/dictionaries: os_data, cpu_data, gpu_data_list, ram_data_list, storage_data_list, network_data, and battery_data
+    #### os_data
+    {
+    "system": The name of your operating system. Ex. Microsoft Windows 10 Pro\n
+    "version": OS version number. Ex. 10.0.19042\n
+    "buildNumber": OS build number. Ex. 19042\n
+    "servicePackMajorVersion": Service pack version. Ex. 0\n
+    "architecture": OS architecture. Ex. 64-bit\n
+    "manufacturer": OS manufacturer. Ex. Microsoft Corporation\n
+    "serialNumber": OS serial number\n
+    }
     #### cpu_data
     {
     "name": The name of your CPU. Ex. 11th Gen Intel(R) Core(TM) i5-1135G7 @2.40GHz\n

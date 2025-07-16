@@ -5,10 +5,20 @@ try:
     def _get_windows_specs():
         '''
         Get all of the specifications of your Windows system.\n
-        It returns a list called specs. Inside the list, there are 6 items:\n
-        [cpu_data, gpu_data_list, ram_data_list, storage_data_list, network_data, battery_data].
+        It returns a list called specs. Inside the list, there are 7 items:\n
+        [os_data, cpu_data, gpu_data_list, ram_data_list, storage_data_list, network_data, battery_data].
 
         ### Below is an index of each element in every dictionary or list.
+        #### os_data
+        {
+        "system": The name of your operating system. Ex. Microsoft Windows 10 Pro\n
+        "version": OS version number. Ex. 10.0.19042\n
+        "buildNumber": OS build number. Ex. 19042\n
+        "servicePackMajorVersion": Service pack version. Ex. 0\n
+        "architecture": OS architecture. Ex. 64-bit\n
+        "manufacturer": OS manufacturer. Ex. Microsoft Corporation\n
+        "serialNumber": OS serial number\n
+        }
         #### cpu_data
         {
         "name": The name of your CPU. Ex. 11th Gen Intel(R) Core(TM) i5-1135G7 @2.40GHz\n
@@ -57,6 +67,21 @@ try:
         c = wmi.WMI()
 
         try:
+            # get os info
+            os_data = {}
+            for os in c.Win32_OperatingSystem():
+                os_data["system"] = os.Name.split('|')[0].strip()
+                os_data["version"] = os.Version
+                os_data["buildNumber"] = os.BuildNumber
+                os_data["servicePackMajorVersion"] = os.ServicePackMajorVersion
+                os_data["architecture"] = os.OSArchitecture
+                os_data["manufacturer"] = os.Manufacturer
+                os_data["serialNumber"] = os.SerialNumber
+                break
+        except:
+            os_data = None
+
+        try:
             # get cpu info
             cpu_data = {}
             for cpu in c.Win32_Processor():
@@ -65,9 +90,6 @@ try:
                 cpu_data["description"] = cpu.Description
                 cpu_data["coreCount"] = cpu.NumberOfCores
                 cpu_data["clockSpeed"] = cpu.MaxClockSpeed
-
-            print("cpu info")
-            print(cpu_data)
         except:
             cpu_data = None
 
@@ -83,8 +105,6 @@ try:
                     "VRAM": int(gpu.AdapterRAM) // (1024 ** 2)
                 }
                 gpu_data_list.append(gpu_data)
-            print("gpu info")
-            print(gpu_data_list)
         except:
             gpu_data_list = None
 
@@ -99,8 +119,6 @@ try:
                     "partNumber": ram.PartNumber.strip()
                 }
                 ram_data_list.append(ram_data)
-            print("ram info")
-            print(ram_data_list)
         except:
             ram_data_list = None
 
@@ -116,8 +134,6 @@ try:
                     "serialNumber": disk.SerialNumber.strip() if disk.SerialNumber else "N/A"
                 }
                 storage_data_list.append(storage_data)
-            print("disk info")
-            print(storage_data_list)
         except:
             storage_data_list = None
         
@@ -131,9 +147,6 @@ try:
                     network_data["manufacturer"] = nic.Manufacturer
                     network_data["adapterType"] = nic.AdapterType
                     network_data["speed"] = int(nic.Speed) / 1000000
-            
-            print("network info")
-            print(network_data)
         except:
             network_data = None
 
@@ -173,15 +186,11 @@ try:
                     
                 battery_data["designCapacity"] = getattr(batt, "DesignCapacity", "N/A")
                 battery_data["fullChargeCapacity"] = getattr(batt, "FullChargeCapacity", "N/A")
-
-            
-            print("battery_info")
-            print(battery_data)
         except:
             battery_data = None
 
         # return everything
-        return cpu_data, gpu_data_list, ram_data_list, storage_data_list, network_data, battery_data
+        return os_data, cpu_data, gpu_data_list, ram_data_list, storage_data_list, network_data, battery_data
     
     def _get_windows_temps():
         """
@@ -332,7 +341,7 @@ try:
 
 except:
     def _get_windows_specs():
-        return None
+        return None, None, None, None, None, None, None
 
     def _get_windows_temps():
-        pass
+        return None

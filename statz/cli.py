@@ -22,30 +22,30 @@ def get_component_specs(args):
     # Get all system specs first
     if current_os == "Windows":
         all_specs = stats.get_system_specs()
-        # Windows returns: cpu_data, gpu_data_list, ram_data_list, storage_data_list, network_data, battery_data
+        # Windows returns: os_data, cpu_data, gpu_data_list, ram_data_list, storage_data_list, network_data, battery_data
         result = {}
         
         if args.os:
-            result["os"] = {"system": current_os, "platform": platform.platform()}
+            result["os"] = all_specs[0] if all_specs[0] else {"system": current_os, "platform": platform.platform()}
         if args.cpu:
-            result["cpu"] = all_specs[0]
+            result["cpu"] = all_specs[1]
         if args.gpu:
-            if all_specs[1]:
-                result["gpu"] = all_specs[1]
+            if all_specs[2]:
+                result["gpu"] = all_specs[2]
             else:
                 result["gpu"] = {"error": "GPU information not available on this system"}
         if args.ram:
-            result["ram"] = all_specs[2]
+            result["ram"] = all_specs[3]
         if args.disk:
-            result["disk"] = all_specs[3]
+            result["disk"] = all_specs[4]
         if args.network:
-            if all_specs[4]:
-                result["network"] = all_specs[4]
+            if all_specs[5]:
+                result["network"] = all_specs[5]
             else:
                 result["network"] = {"error": "Network information not available on this system"}
         if args.battery:
-            if all_specs[5]:
-                result["battery"] = all_specs[5]
+            if all_specs[6]:
+                result["battery"] = all_specs[6]
             else:
                 result["battery"] = {"error": "Battery information not available on this system"}
         if args.temp:
@@ -242,7 +242,7 @@ def main():
                     "battery": specsOrUsage[4]
                 }
             elif len(specsOrUsage) == 6:
-                # Windows format
+                # Windows format (old)
                 output = {
                     "cpu": specsOrUsage[0],
                     "gpu": specsOrUsage[1],
@@ -250,6 +250,17 @@ def main():
                     "disk": specsOrUsage[3],
                     "network": specsOrUsage[4],
                     "battery": specsOrUsage[5]
+                }
+            elif len(specsOrUsage) == 7:
+                # Windows format (new with OS info)
+                output = {
+                    "os": specsOrUsage[0],
+                    "cpu": specsOrUsage[1],
+                    "gpu": specsOrUsage[2],
+                    "memory": specsOrUsage[3],
+                    "disk": specsOrUsage[4],
+                    "network": specsOrUsage[5],
+                    "battery": specsOrUsage[6]
                 }
             else:
                 output = specsOrUsage
@@ -283,7 +294,7 @@ def main():
                         "battery": specsOrUsage[4]
                     }
                 elif len(specsOrUsage) == 6:
-                    # Windows format
+                    # Windows format (old)
                     output = {
                         "cpu": specsOrUsage[0],
                         "gpu": specsOrUsage[1],
@@ -291,6 +302,17 @@ def main():
                         "disk": specsOrUsage[3],
                         "network": specsOrUsage[4],
                         "battery": specsOrUsage[5]
+                    }
+                elif len(specsOrUsage) == 7:
+                    # Windows format (new with OS info)
+                    output = {
+                        "os": specsOrUsage[0],
+                        "cpu": specsOrUsage[1],
+                        "gpu": specsOrUsage[2],
+                        "memory": specsOrUsage[3],
+                        "disk": specsOrUsage[4],
+                        "network": specsOrUsage[5],
+                        "battery": specsOrUsage[6]
                     }
                 else:
                     output = specsOrUsage
@@ -327,8 +349,22 @@ def main():
                     else:
                         print(f"  {category_data}")
             elif len(specsOrUsage) == 6:
-                # Windows format
+                # Windows format (old)
                 categories = ["CPU Info", "GPU Info", "Memory Info", "Disk Info", "Network Info", "Battery Info"]
+                for i, category_data in enumerate(specsOrUsage):
+                    print(f"\n{categories[i]}:")
+                    if isinstance(category_data, dict):
+                        for k, v in category_data.items():
+                            formatted_value = format_value(k, v)
+                            print(f"  {k}: {formatted_value}")
+                    elif isinstance(category_data, list):
+                        for j, item in enumerate(category_data):
+                            print(f"  Device {j+1}: {item}")
+                    else:
+                        print(f"  {category_data}")
+            elif len(specsOrUsage) == 7:
+                # Windows format (new with OS info)
+                categories = ["OS Info", "CPU Info", "GPU Info", "Memory Info", "Disk Info", "Network Info", "Battery Info"]
                 for i, category_data in enumerate(specsOrUsage):
                     print(f"\n{categories[i]}:")
                     if isinstance(category_data, dict):
