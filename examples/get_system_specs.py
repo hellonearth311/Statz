@@ -31,13 +31,17 @@ if os == "Darwin" or os == "Linux":
     print("-----------------------------------------")
 
 elif os == "Windows":
-    cpu_specs = specs[0]
-    gpu_specs = specs[1]
-    ram_specs = specs[2]
-    storage_specs = specs[3]
-    network_specs = specs[4]
-    battery_specs = specs[5]
+    os_specs = specs[0]
+    cpu_specs = specs[1]
+    gpu_specs = specs[2]
+    ram_specs = specs[3]
+    storage_specs = specs[4]
+    network_specs = specs[5]
+    battery_specs = specs[6]
 
+    print(os_specs)
+    print("-----------------------------------------")
+    
     print(cpu_specs)
     print("-----------------------------------------")
 
