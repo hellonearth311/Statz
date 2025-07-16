@@ -1,6 +1,7 @@
 from statz import stats
 from datetime import date, datetime
 from colorama import Fore, Style, init
+from .dashboard import run_dashboard
 
 import platform
 import json
@@ -180,6 +181,9 @@ def main():
     parser.add_argument("--process-count", type=int, default=5, help="Number of top processes to show (default: 5)")
     parser.add_argument("--process-type", choices=["cpu", "mem"], default="cpu", help="Sort processes by CPU or memory usage (default: cpu)")
 
+    # dashboard
+    parser.add_argument("--dashboard", action="store_true", help="Create a live dashboard")
+
     args = parser.parse_args()
 
     # Check if any component flags are used
@@ -195,7 +199,7 @@ def main():
                 specsOrUsage["temperature"] = {"error": "Temperature information not available on this system"}
         except Exception as e:
             specsOrUsage = {"temperature": {"error": f"Temperature reading failed: {str(e)}"}}
-    elif args.processes and not args.specs and not args.usage and not args.temp:
+    elif args.processes and not args.specs and not args.usage and not args.temp and not args.dashboard:
         # Handle standalone processes command
         try:
             specsOrUsage = {"processes": stats.get_top_n_processes(args.process_count, args.process_type)}
@@ -217,6 +221,13 @@ def main():
         else:
             # Get all usage
             specsOrUsage = stats.get_hardware_usage()
+    elif args.dashboard and not args.specs and not args.usage and not args.temp and not args.processes:
+        try:
+            run_dashboard()
+            return
+        except Exception as e:
+            print(f"{Fore.RED} Error starting dashboard: {e}{Style.RESET_ALL}")
+            return
     else:
         parser.print_help()
         return
