@@ -166,7 +166,7 @@ statz --dashboard
 
 ## 📝 Changelog
 
-### v1.0.0 – Major Feature Release
+### v1.0.0 – First Stable Release 🎉
 - Added exporting to the base module instead of just the CLI 📤
   - You can now export data programmatically using the `export_into_file()` function
 - Live dashboard 📊
@@ -177,6 +177,6 @@ statz --dashboard
   - GPU information now displays properly formatted instead of raw dictionary output
 - Fixed broken top N processes ⬆️
   - Process monitoring now correctly shows the highest resource-consuming processes
-  
+
 ## 📝 Side Note
 If you find any errors on Linux, please report them to me with as much detail as possible as I do not have a Linux machine.
