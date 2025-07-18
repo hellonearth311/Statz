@@ -2,7 +2,7 @@ VERSION 1.0.0
 - add exporting to the base module instead of just the CLI 📤
 - actually add better exception handling instead of forgetting 
 - live dashboard ✅ 📊
+- fix gpu specs output in cli ✅💻
 
 VERSION 1.1.0
-- performance improvements
-- configuration
+- performance improvements 📈

@@ -39,79 +39,102 @@ def _get_mac_specs():
     # os info
     os_info = {}
 
-    os_info["system"] = platform.system()
-    os_info["nodeName"] = platform.node()
-    os_info["release"] = platform.release()
-    os_info["version"] = platform.version()
-    os_info["machine"] = platform.machine()
+    try:
+        os_info["system"] = platform.system()
+        os_info["nodeName"] = platform.node()
+        os_info["release"] = platform.release()
+        os_info["version"] = platform.version()
+        os_info["machine"] = platform.machine()
+    except:
+        os_info["system"] = "Error"
+        os_info["nodeName"] = "Error"
+        os_info["release"] = "Error"
+        os_info["version"] = "Error"
+        os_info["machine"] = "Error"
 
 
     # cpu info
     cpu_info = {}   
 
-    cpu_info["processor"] = platform.processor()
-    cpu_info["coreCountPhysical"] = psutil.cpu_count(logical=False)
-    cpu_info["coreCountLogical"] = psutil.cpu_count()
-    
-    # get cpu name using sysctl
     try:
-        cpu_name_result = subprocess.run(['sysctl', '-n', 'machdep.cpu.brand_string'], 
-                                       capture_output=True, text=True)
-        cpu_info["cpuName"] = cpu_name_result.stdout.strip()
-    except:
-        cpu_info["cpuName"] = "Unknown"
-    
-    # get cpu freq using sysctl hw.cpufrequency or hw.cpufrequency_max for AS macs
-    try:
-        cpu_freq_result = subprocess.run(['sysctl', '-n', 'hw.cpufrequency'], 
-                                       capture_output=True, text=True)
-        if cpu_freq_result.returncode == 0 and cpu_freq_result.stdout.strip():
-            cpu_freq_hz = int(cpu_freq_result.stdout.strip())
-            cpu_info["cpuFrequency"] = f"{cpu_freq_hz / 1000000:.2f} MHz"
-        else:
-            cpu_freq_result = subprocess.run(['sysctl', '-n', 'hw.cpufrequency_max'], 
-                                           capture_output=True, text=True)
+        cpu_info["processor"] = platform.processor()
+        cpu_info["coreCountPhysical"] = psutil.cpu_count(logical=False)
+        cpu_info["coreCountLogical"] = psutil.cpu_count()
+        
+        # get cpu name using sysctl
+        try:
+            cpu_name_result = subprocess.run(['sysctl', '-n', 'machdep.cpu.brand_string'], 
+                                        capture_output=True, text=True)
+            cpu_info["cpuName"] = cpu_name_result.stdout.strip()
+        except:
+            cpu_info["cpuName"] = "Unknown"
+        
+        # get cpu freq using sysctl hw.cpufrequency or hw.cpufrequency_max for AS macs
+        try:
+            cpu_freq_result = subprocess.run(['sysctl', '-n', 'hw.cpufrequency'], 
+                                        capture_output=True, text=True)
             if cpu_freq_result.returncode == 0 and cpu_freq_result.stdout.strip():
                 cpu_freq_hz = int(cpu_freq_result.stdout.strip())
                 cpu_info["cpuFrequency"] = f"{cpu_freq_hz / 1000000:.2f} MHz"
             else:
-                cpu_info["cpuFrequency"] = "Unknown"
+                cpu_freq_result = subprocess.run(['sysctl', '-n', 'hw.cpufrequency_max'], 
+                                            capture_output=True, text=True)
+                if cpu_freq_result.returncode == 0 and cpu_freq_result.stdout.strip():
+                    cpu_freq_hz = int(cpu_freq_result.stdout.strip())
+                    cpu_info["cpuFrequency"] = f"{cpu_freq_hz / 1000000:.2f} MHz"
+                else:
+                    cpu_info["cpuFrequency"] = "Unknown"
+        except:
+            cpu_info["cpuFrequency"] = "Unknown"
     except:
-        cpu_info["cpuFrequency"] = "Unknown"
+        cpu_info["processor"] = "Error"
+        cpu_info["coreCountPhysical"] = "Error"
+        cpu_info["coreCountLogical"] = "Error"
+        cpu_info["cpuName"] = "Error"
+        cpu_info["cpuFrequency"] = "Error"
 
     # ram info
     mem_info = {}
 
-    svmem = psutil.virtual_memory()
-    mem_info["totalRAM"] = f"{svmem.total / (1024**3):.2f} GB"
-    
-    # get ram freq using system profiler
     try:
-        memory_result = subprocess.run(['system_profiler', 'SPMemoryDataType'], 
-                                     capture_output=True, text=True)
-        if memory_result.returncode == 0:
-            memory_output = memory_result.stdout
-            speed_match = re.search(r'Speed:\s*(\d+)\s*MHz', memory_output, re.IGNORECASE)
-            if speed_match:
-                mem_info["ramFrequency"] = f"{speed_match.group(1)} MHz"
-            else:
-                speed_match = re.search(r'(\d+)\s*MHz', memory_output)
+        svmem = psutil.virtual_memory()
+        mem_info["totalRAM"] = f"{svmem.total / (1024**3):.2f} GB"
+        
+        # get ram freq using system profiler
+        try:
+            memory_result = subprocess.run(['system_profiler', 'SPMemoryDataType'], 
+                                        capture_output=True, text=True)
+            if memory_result.returncode == 0:
+                memory_output = memory_result.stdout
+                speed_match = re.search(r'Speed:\s*(\d+)\s*MHz', memory_output, re.IGNORECASE)
                 if speed_match:
                     mem_info["ramFrequency"] = f"{speed_match.group(1)} MHz"
                 else:
-                    mem_info["ramFrequency"] = "Unknown"
-        else:
+                    speed_match = re.search(r'(\d+)\s*MHz', memory_output)
+                    if speed_match:
+                        mem_info["ramFrequency"] = f"{speed_match.group(1)} MHz"
+                    else:
+                        mem_info["ramFrequency"] = "Unknown"
+            else:
+                mem_info["ramFrequency"] = "Unknown"
+        except:
             mem_info["ramFrequency"] = "Unknown"
     except:
-        mem_info["ramFrequency"] = "Unknown"
+        mem_info["totalRAM"] = "Error"
+        mem_info["ramFrequency"] = "Error"
 
     # disk info
     disk_info = {}
 
-    disk_usage = psutil.disk_usage('/')
-    disk_info["totalSpace"] = f"{disk_usage.total / (1024**3):.2f} GB"
-    disk_info["usedSpace"] = f"{disk_usage.used / ((1024**3) / 10):.2f} GB"
-    disk_info["freeSpace"] = f"{disk_usage.free / (1024**3):.2f} GB"
+    try:
+        disk_usage = psutil.disk_usage('/')
+        disk_info["totalSpace"] = f"{disk_usage.total / (1024**3):.2f} GB"
+        disk_info["usedSpace"] = f"{disk_usage.used / ((1024**3) / 10):.2f} GB"
+        disk_info["freeSpace"] = f"{disk_usage.free / (1024**3):.2f} GB"
+    except:
+        disk_info["totalSpace"] = "Error"
+        disk_info["usedSpace"] = "Error"
+        disk_info["freeSpace"] = "Error"
 
     return os_info, cpu_info, mem_info, disk_info
 

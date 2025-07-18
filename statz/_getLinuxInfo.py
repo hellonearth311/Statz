@@ -34,81 +34,104 @@ def _get_linux_specs():
     "usedSpace": Used space in GB,\n
     "freeSpace": Free space in GB,\n
     }
-    '''
+    '''        
     # os info
     os_info = {}
-
-    os_info["system"] = platform.system()
-    os_info["nodeName"] = platform.node()
-    os_info["release"] = platform.release()
-    os_info["version"] = platform.version()
-    os_info["machine"] = platform.machine()
+    try:
+        os_info["system"] = platform.system()
+        os_info["nodeName"] = platform.node()
+        os_info["release"] = platform.release()
+        os_info["version"] = platform.version()
+        os_info["machine"] = platform.machine()
+    except:
+        os_info["system"] = "Error"
+        os_info["nodeName"] = "Error"
+        os_info["release"] = "Error"
+        os_info["version"] = "Error"
+        os_info["machine"] = "Error"
+        
 
     # cpu info
-    cpu_info = {}   
+    cpu_info = {}
 
-    cpu_info["processor"] = platform.processor()
-    cpu_info["coreCountPhysical"] = psutil.cpu_count(logical=False)
-    cpu_info["coreCountLogical"] = psutil.cpu_count()
-    
-    # get cpu name from /proc/cpuinfo
     try:
-        with open('/proc/cpuinfo', 'r') as f:
-            for line in f:
-                if 'model name' in line:
-                    cpu_info["cpuName"] = line.split(':')[1].strip()
-                    break
-        if "cpuName" not in cpu_info:
+        cpu_info["processor"] = platform.processor()
+        cpu_info["coreCountPhysical"] = psutil.cpu_count(logical=False)
+        cpu_info["coreCountLogical"] = psutil.cpu_count()
+        
+        # get cpu name from /proc/cpuinfo
+        try:
+            with open('/proc/cpuinfo', 'r') as f:
+                for line in f:
+                    if 'model name' in line:
+                        cpu_info["cpuName"] = line.split(':')[1].strip()
+                        break
+            if "cpuName" not in cpu_info:
+                cpu_info["cpuName"] = "Unknown"
+        except:
             cpu_info["cpuName"] = "Unknown"
-    except:
-        cpu_info["cpuName"] = "Unknown"
-    
-    # get cpu frequency from /proc/cpuinfo
-    try:
-        with open('/proc/cpuinfo', 'r') as f:
-            for line in f:
-                if 'cpu MHz' in line:
-                    freq = float(line.split(':')[1].strip())
-                    cpu_info["cpuFrequency"] = f"{freq:.2f} MHz"
-                    break
-        if "cpuFrequency" not in cpu_info:
+        
+        # get cpu frequency from /proc/cpuinfo
+        try:
+            with open('/proc/cpuinfo', 'r') as f:
+                for line in f:
+                    if 'cpu MHz' in line:
+                        freq = float(line.split(':')[1].strip())
+                        cpu_info["cpuFrequency"] = f"{freq:.2f} MHz"
+                        break
+            if "cpuFrequency" not in cpu_info:
+                cpu_info["cpuFrequency"] = "Unknown"
+        except:
             cpu_info["cpuFrequency"] = "Unknown"
     except:
-        cpu_info["cpuFrequency"] = "Unknown"
+        cpu_info["processor"] = "Error"
+        cpu_info["coreCountPhysical"] = "Error"
+        cpu_info["coreCountLogical"] = "Error"
+        cpu_info["cpuName"] = "Error"
+        cpu_info["cpuFrequency"] = "Error"
 
     # ram info
     mem_info = {}
 
-    svmem = psutil.virtual_memory()
-    mem_info["totalRAM"] = f"{svmem.total / (1024**3):.2f} GB"
-    
-    # get ram frequency using dmidecode
     try:
-        memory_result = subprocess.run(['dmidecode', '-t', 'memory'], 
-                                     capture_output=True, text=True)
-        if memory_result.returncode == 0:
-            memory_output = memory_result.stdout
-            speed_match = re.search(r'Speed:\s*(\d+)\s*MT/s', memory_output, re.IGNORECASE)
-            if speed_match:
-                mem_info["ramFrequency"] = f"{speed_match.group(1)} MHz"
-            else:
-                speed_match = re.search(r'Speed:\s*(\d+)\s*MHz', memory_output, re.IGNORECASE)
+        svmem = psutil.virtual_memory()
+        mem_info["totalRAM"] = f"{svmem.total / (1024**3):.2f} GB"
+        
+        # get ram frequency using dmidecode
+        try:
+            memory_result = subprocess.run(['dmidecode', '-t', 'memory'], 
+                                        capture_output=True, text=True)
+            if memory_result.returncode == 0:
+                memory_output = memory_result.stdout
+                speed_match = re.search(r'Speed:\s*(\d+)\s*MT/s', memory_output, re.IGNORECASE)
                 if speed_match:
                     mem_info["ramFrequency"] = f"{speed_match.group(1)} MHz"
                 else:
-                    mem_info["ramFrequency"] = "Unknown"
-        else:
+                    speed_match = re.search(r'Speed:\s*(\d+)\s*MHz', memory_output, re.IGNORECASE)
+                    if speed_match:
+                        mem_info["ramFrequency"] = f"{speed_match.group(1)} MHz"
+                    else:
+                        mem_info["ramFrequency"] = "Unknown"
+            else:
+                mem_info["ramFrequency"] = "Unknown"
+        except:
             mem_info["ramFrequency"] = "Unknown"
     except:
-        mem_info["ramFrequency"] = "Unknown"
+        mem_info["totalRAM"] = "Error"
+        mem_info["ramFrequency"] = "Error"
 
     # disk info
     disk_info = {}
 
-    disk_usage = psutil.disk_usage('/')
-    disk_info["totalSpace"] = f"{disk_usage.total / (1024**3):.2f} GB"
-    disk_info["usedSpace"] = f"{disk_usage.used / ((1024**3) / 10):.2f} GB"
-    disk_info["freeSpace"] = f"{disk_usage.free / (1024**3):.2f} GB"
+    try:
+        disk_usage = psutil.disk_usage('/')
+        disk_info["totalSpace"] = f"{disk_usage.total / (1024**3):.2f} GB"
+        disk_info["usedSpace"] = f"{disk_usage.used / ((1024**3) / 10):.2f} GB"
+        disk_info["freeSpace"] = f"{disk_usage.free / (1024**3):.2f} GB"
+    except:
+        disk_info["totalSpace"] = "Error"
+        disk_info["usedSpace"] = "Error"
+        disk_info["freeSpace"] = "Error"
 
     return os_info, cpu_info, mem_info, disk_info
 

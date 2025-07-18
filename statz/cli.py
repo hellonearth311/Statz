@@ -16,6 +16,33 @@ def format_value(key, value):
     else:
         return value
 
+def format_gpu_data(gpu_data):
+    """Format GPU data for display."""
+    if isinstance(gpu_data, dict) and "error" in gpu_data:
+        return f"{Fore.RED}{gpu_data['error']}{Style.RESET_ALL}"
+    elif isinstance(gpu_data, list):
+        if not gpu_data:
+            return f"{Fore.RED}No GPU information available{Style.RESET_ALL}"
+        # Format each GPU device
+        formatted_output = []
+        for i, gpu in enumerate(gpu_data):
+            if isinstance(gpu, dict):
+                gpu_info = f"  GPU {i+1}:"
+                for key, value in gpu.items():
+                    gpu_info += f"\n    {key}: {value}"
+                formatted_output.append(gpu_info)
+            else:
+                formatted_output.append(f"  GPU {i+1}: {gpu}")
+        return "\n".join(formatted_output)
+    elif isinstance(gpu_data, dict):
+        # Single GPU as dictionary
+        gpu_info = []
+        for key, value in gpu_data.items():
+            gpu_info.append(f"    {key}: {value}")
+        return "  GPU 1:\n" + "\n".join(gpu_info)
+    else:
+        return str(gpu_data)
+
 def get_component_specs(args):
     """Get specs for specific components based on OS and requested components."""
     current_os = platform.system()
@@ -364,13 +391,21 @@ def main():
                 categories = ["CPU Info", "GPU Info", "Memory Info", "Disk Info", "Network Info", "Battery Info"]
                 for i, category_data in enumerate(specsOrUsage):
                     print(f"\n{categories[i]}:")
-                    if isinstance(category_data, dict):
+                    if i == 1:  # GPU Info index
+                        formatted_gpu = format_gpu_data(category_data)
+                        print(formatted_gpu)
+                    elif isinstance(category_data, dict):
                         for k, v in category_data.items():
                             formatted_value = format_value(k, v)
                             print(f"  {k}: {formatted_value}")
                     elif isinstance(category_data, list):
                         for j, item in enumerate(category_data):
-                            print(f"  Device {j+1}: {item}")
+                            if isinstance(item, dict):
+                                print(f"  Device {j+1}:")
+                                for k, v in item.items():
+                                    print(f"    {k}: {v}")
+                            else:
+                                print(f"  Device {j+1}: {item}")
                     else:
                         print(f"  {category_data}")
             elif len(specsOrUsage) == 7:
@@ -378,26 +413,42 @@ def main():
                 categories = ["OS Info", "CPU Info", "GPU Info", "Memory Info", "Disk Info", "Network Info", "Battery Info"]
                 for i, category_data in enumerate(specsOrUsage):
                     print(f"\n{categories[i]}:")
-                    if isinstance(category_data, dict):
+                    if i == 2:  # GPU Info index
+                        formatted_gpu = format_gpu_data(category_data)
+                        print(formatted_gpu)
+                    elif isinstance(category_data, dict):
                         for k, v in category_data.items():
                             formatted_value = format_value(k, v)
                             print(f"  {k}: {formatted_value}")
                     elif isinstance(category_data, list):
                         for j, item in enumerate(category_data):
-                            print(f"  Device {j+1}: {item}")
+                            if isinstance(item, dict):
+                                print(f"  Device {j+1}:")
+                                for k, v in item.items():
+                                    print(f"    {k}: {v}")
+                            else:
+                                print(f"  Device {j+1}: {item}")
                     else:
                         print(f"  {category_data}")
         else:
             # Handle dictionary format (component-specific data)
             for component, data in specsOrUsage.items():
                 print(f"\n{component.upper()} Info:")
-                if isinstance(data, dict):
+                if component.lower() == "gpu":
+                    formatted_gpu = format_gpu_data(data)
+                    print(formatted_gpu)
+                elif isinstance(data, dict):
                     for k, v in data.items():
                         formatted_value = format_value(k, v)
                         print(f"  {k}: {formatted_value}")
                 elif isinstance(data, list):
                     for j, item in enumerate(data):
-                        print(f"  Device {j+1}: {item}")
+                        if isinstance(item, dict):
+                            print(f"  Device {j+1}:")
+                            for k, v in item.items():
+                                print(f"    {k}: {v}")
+                        else:
+                            print(f"  Device {j+1}: {item}")
                 else:
                     formatted_value = format_value("data", data)
                     print(f"  {formatted_value}")
