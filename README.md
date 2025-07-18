@@ -44,6 +44,29 @@ statz --processes
 
 # Get temperature readings
 statz --temp
+
+# Launch live dashboard
+statz --dashboard
+```
+
+### Live Dashboard
+
+The live dashboard provides real-time monitoring of your system with an interactive interface:
+
+```bash
+# Launch the dashboard
+statz --dashboard
+```
+
+The dashboard displays:
+- 📊 Real-time CPU usage per core
+- 🧠 Memory usage and availability
+- 💾 Disk I/O speeds
+- 🌐 Network upload/download speeds
+- 🔋 Battery status (if available)
+- 🌡️ Temperature readings (if available)
+
+Press `Ctrl+C` to exit the dashboard.
 ```
 
 ### Component-Specific Information
@@ -101,6 +124,7 @@ statz --usage --processes --out
 | `--usage` | Get real-time system usage |
 | `--processes` | Get top processes information |
 | `--temp` | Get temperature readings |
+| `--dashboard` | Launch live monitoring dashboard |
 | `--os` | Operating system information |
 | `--cpu` | CPU information |
 | `--gpu` | GPU information (Windows only) |
@@ -130,6 +154,9 @@ statz --temp --usage --cpu
 
 # Get complete system overview
 statz --specs --usage --processes --temp
+
+# Launch interactive dashboard for real-time monitoring
+statz --dashboard
 ```
 
 ---
@@ -139,10 +166,17 @@ statz --specs --usage --processes --temp
 
 ## 📝 Changelog
 
-### v0.4.1 – Bug Squashing and Windows Compatibility
-- Fixed CLI Bugs 🐞
-  - I have fixed the CLI bugs that some users are reporting
-- Added OS information to Windows 🪟
-  - You can now get OS information on Windows!
+### v1.0.0 – Major Feature Release
+- Added exporting to the base module instead of just the CLI 📤
+  - You can now export data programmatically using the `export_into_file()` function
+- Live dashboard 📊
+  - New real-time dashboard feature for monitoring system metrics (`statz --dashboard`)
+  - Interactive interface showing CPU, memory, disk I/O, network, battery, and temperature data
+  - Updates in real-time with colored indicators and progress bars
+- Fixed GPU specs output in CLI 💻
+  - GPU information now displays properly formatted instead of raw dictionary output
+- Fixed broken top N processes ⬆️
+  - Process monitoring now correctly shows the highest resource-consuming processes
+  
 ## 📝 Side Note
 If you find any errors on Linux, please report them to me with as much detail as possible as I do not have a Linux machine.
