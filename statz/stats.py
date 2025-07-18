@@ -1,9 +1,17 @@
-from ._getMacInfo import _get_mac_specs, _get_mac_temps
-from ._getWindowsInfo import _get_windows_specs, _get_windows_temps
-from ._getLinuxInfo import _get_linux_specs, _get_linux_temps
-from ._getUsage import _get_usage, _get_top_n_processes
+try:
+    from ._getMacInfo import _get_mac_specs, _get_mac_temps
+    from ._getWindowsInfo import _get_windows_specs, _get_windows_temps
+    from ._getLinuxInfo import _get_linux_specs, _get_linux_temps
+    from ._getUsage import _get_usage, _get_top_n_processes
+except ImportError:
+    from _getMacInfo import _get_mac_specs, _get_mac_temps
+    from _getWindowsInfo import _get_windows_specs, _get_windows_temps
+    from _getLinuxInfo import _get_linux_specs, _get_linux_temps
+    from _getUsage import _get_usage, _get_top_n_processes
 
 import platform
+from datetime import datetime, date
+import json
 
 def get_hardware_usage():
     '''
@@ -243,8 +251,28 @@ def get_top_n_processes(n=5, type="cpu"):
     '''
     return _get_top_n_processes(n, type)
 
+def export_into_file(function):
+    '''
+    Export the output of a function to a text file.
+    
+    This utility function takes another function as input, executes it,
+    and writes the output to a file named "statz_export_{date}_{time}.json".
+    
+    Args:
+        function (callable): The function whose output is to be exported.
+    '''
+    try:
+        output = function()
+        time = datetime.now().strftime("%H-%M-%S")
+        path_to_export = f"statz_export_{date.today()}_{time}.json"
+        with open(path_to_export, "x") as f:
+            json.dump(output, f, indent=2)
+    except Exception as e:
+        print(f"Error exporting to file: {e}")
+
 if __name__ == "__main__":
-    print(get_hardware_usage())
-    print(get_system_specs())
-    print(get_system_temps())
-    print(get_top_n_processes())
+    # print(get_hardware_usage())
+    # print(get_system_specs())
+    # print(get_system_temps())
+    # print(get_top_n_processes())
+    export_into_file(get_hardware_usage)

@@ -111,14 +111,24 @@ def _get_top_n_processes(n=5, type="cpu"):
     except:
         raise TypeError(f"n must be int, not {type(n)}")
     
+    # First, initialize CPU monitoring for all processes
+    if type == "cpu":
+        for proc in psutil.process_iter():
+            try:
+                proc.cpu_percent()  # Initialize CPU monitoring
+            except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                pass
+        # Wait a bit for accurate CPU readings
+        time.sleep(0.1)
+    
     processes = []
     for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent']):
         try:
             proc_info = proc.info
-            # Filter out processes with None values
-            if type == "cpu" and proc_info['cpu_percent'] is not None:
+            # Filter out processes with None values and very low usage
+            if type == "cpu" and proc_info['cpu_percent'] is not None and proc_info['cpu_percent'] > 0:
                 processes.append(proc_info)
-            elif type == "mem" and proc_info['memory_percent'] is not None:
+            elif type == "mem" and proc_info['memory_percent'] is not None and proc_info['memory_percent'] > 0:
                 processes.append(proc_info)
         except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
             pass

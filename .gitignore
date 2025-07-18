@@ -3,3 +3,4 @@ dist
 src
 statz/__pycache__
 statz.egg-info
+statz_export_*.json

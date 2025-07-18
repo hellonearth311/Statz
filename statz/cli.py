@@ -309,7 +309,7 @@ def main():
     elif args.out:
         print("exporting specs/usage into a file...")
         
-        time = datetime.now().strftime("%H:%M:%S")
+        time = datetime.now().strftime("%H-%M-%S")
         path_to_export = f"statz_export_{date.today()}_{time}.json"
         with open(path_to_export, "x") as f:
             if isinstance(specsOrUsage, tuple):
