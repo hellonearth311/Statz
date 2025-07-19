@@ -141,7 +141,13 @@ def get_component_usage(args):
     
     # Get all usage data first
     try:
-        all_usage = stats.get_hardware_usage()
+        all_usage = stats.get_hardware_usage(
+            get_cpu=args.cpu,
+            get_ram=args.ram,
+            get_disk=args.disk,
+            get_network=args.network,
+            get_battery=args.battery
+        )
         # Returns: cpu_usage, ram_usage, disk_usages, network_usage, battery_usage
         result = {}
         

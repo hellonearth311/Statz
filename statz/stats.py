@@ -13,37 +13,27 @@ import platform
 from datetime import datetime, date
 import json
 
-def get_hardware_usage():
+def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=True, get_battery=True):
     '''
-    Get real-time usage data for most system components. \n
-    GPU Usage is **not** supported due to lack of a Python binding for AMD and Intel GPUs.\n
+    Get real-time usage data for specified system components. 
 
-    This function returns a list:\n
-    [cpu_usage (dict), ram_usage (dict), disk_usages (list of dicts), network_usage (dict), battery_usage (dict)]
+    This function allows you to specify which components to fetch data for, improving performance by avoiding unnecessary computations.
 
-    ### Structure of returned data:
-    - cpu_usage (dict):\n
-        { "core1": usage percent, "core2": usage percent, ... }\n
-    - ram_usage (dict):\n
-        { "total": MB, "used": MB, "free": MB, "percent": percent_used }\n
-    - disk_usages (list of dicts):\n
-        [\n
-            {\n
-                "device": device_name,\n
-                "readSpeed": current_read_speed_MBps,\n
-                "writeSpeed": current_write_speed_MBps,\n
-            },\n
-            ...\n
-        ]\n
-    - network_usage (dict):\n
-        { "up": upload_speed_mbps, "down": download_speed_mbps }\n
-    - battery_usage (dict):\n
-        { "percent": percent_left, "pluggedIn": is_plugged_in, "timeLeftMins": minutes_left (2147483640 = unlimited) }\n
+    Args:
+        get_cpu (bool): Whether to fetch CPU usage data.
+        get_ram (bool): Whether to fetch RAM usage data.
+        get_disk (bool): Whether to fetch disk usage data.
+        get_network (bool): Whether to fetch network usage data.
+        get_battery (bool): Whether to fetch battery usage data.
+
+    Returns:
+        list: A list containing usage data for the specified components in the following order:
+        [cpu_usage (dict), ram_usage (dict), disk_usages (list of dicts), network_usage (dict), battery_usage (dict)]
     ''' 
     operatingSystem = platform.system()
 
     if operatingSystem == "Darwin" or operatingSystem == "Linux" or operatingSystem == "Windows":
-        return _get_usage()
+        return _get_usage(get_cpu, get_ram, get_disk, get_network, get_battery)
     else:
         raise OSError("Unsupported operating system")
 

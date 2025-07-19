@@ -1,109 +1,144 @@
 import psutil
 import time
 
-def _get_usage():
+def _get_usage(get_cpu, get_ram, get_disk, get_network, get_battery):
     '''
-    Get real-time usage data for most system components. \n
-    GPU Usage is **not** supported due to lack of a Python binding for AMD and Intel GPUs.\n
+    Get real-time usage data for specified system components. 
 
-    This function returns a list:\n
-    [cpu_usage (dict), ram_usage (dict), disk_usages (list of dicts), network_usage (dict), battery_usage (dict)]
+    This function allows you to specify which components to fetch data for, improving performance by avoiding unnecessary computations.
+
+    Args:
+        get_cpu (bool): Whether to fetch CPU usage data.
+        get_ram (bool): Whether to fetch RAM usage data.
+        get_disk (bool): Whether to fetch disk usage data.
+        get_network (bool): Whether to fetch network usage data.
+        get_battery (bool): Whether to fetch battery usage data.
+
+    Returns:
+        list: A list containing usage data for the specified components in the following order:
+        [cpu_usage (dict), ram_usage (dict), disk_usages (list of dicts), network_usage (dict), battery_usage (dict)]
 
     ### Structure of returned data:
-    - cpu_usage (dict):\n
-        { "core1": usage percent, "core2": usage percent, ... }\n
-    - ram_usage (dict):\n
-        { "total": MB, "used": MB, "free": MB, "percent": percent_used }\n
-    - disk_usages (list of dicts):\n
-        [\n
-            {\n
-                "device": device_name,\n
-                "readSpeed": current_read_speed_MBps,\n
-                "writeSpeed": current_write_speed_MBps,\n
-            },\n
-            ...\n
-        ]\n
-    - network_usage (dict):\n
-        { "up": upload_speed_mbps, "down": download_speed_mbps }\n
-    - battery_usage (dict):\n
-        { "percent": percent_left, "pluggedIn": is_plugged_in, "timeLeftMins": minutes_left (2147483640 = unlimited) }\n
+    - cpu_usage (dict):
+        { "core1": usage percent, "core2": usage percent, ... }
+    - ram_usage (dict):
+        { "total": MB, "used": MB, "free": MB, "percent": percent_used }
+    - disk_usages (list of dicts):
+        [
+            {
+                "device": device_name,
+                "readSpeed": current_read_speed_MBps,
+                "writeSpeed": current_write_speed_MBps,
+            },
+            ...
+        ]
+    - network_usage (dict):
+        { "up": upload_speed_mbps, "down": download_speed_mbps }
+    - battery_usage (dict):
+        { "percent": percent_left, "pluggedIn": is_plugged_in, "timeLeftMins": minutes_left (2147483640 = unlimited) }
+
+    Note:
+        Specify `False` for components you do not need to fetch to improve performance.
     ''' 
-    try:
-        # cpu usage
-        psutil.cpu_percent(percpu=True)
-        time.sleep(0.1)
-        cpu_usage_list = psutil.cpu_percent(percpu=True)
+    stats = []
 
-        cpu_usage = {}
-        for i, core in enumerate(cpu_usage_list, 1):
-            cpu_usage[f"core{i}"] = core
-    except:
-        cpu_usage = None
-    try:
-        # ram usage
-        ram = psutil.virtual_memory()
+    if get_cpu:
+        try:
+            # cpu usage
+            psutil.cpu_percent(percpu=True)
+            time.sleep(0.1)
+            cpu_usage_list = psutil.cpu_percent(percpu=True)
 
-        ram_usage = {
-            "total": round(ram.total / (1024 ** 2), 1),
-            "used": round(ram.used / (1024 ** 2), 1),
-            "free": round(ram.available / (1024 ** 2), 1),
-            "percent": ram.percent
-        }
-    except:
-        ram_usage = None
+            cpu_usage = {}
+            for i, core in enumerate(cpu_usage_list, 1):
+                cpu_usage[f"core{i}"] = core
+                stats.append(cpu_usage)
+        except:
+            stats.append(None)
+    else:
+        stats.append(None)
 
-    try:
-        # disk usage
-        disk_usages = []
-        disk_counters_1 = psutil.disk_io_counters(perdisk=True)
-        time.sleep(1)
-        disk_counters_2 = psutil.disk_io_counters(perdisk=True)
+    if get_ram:
+        try:
+            # ram usage
+            ram = psutil.virtual_memory()
 
-        for device in disk_counters_1:
-            read_bytes_1 = disk_counters_1[device].read_bytes
-            write_bytes_1 = disk_counters_1[device].write_bytes
-            read_bytes_2 = disk_counters_2[device].read_bytes
-            write_bytes_2 = disk_counters_2[device].write_bytes
+            ram_usage = {
+                "total": round(ram.total / (1024 ** 2), 1),
+                "used": round(ram.used / (1024 ** 2), 1),
+                "free": round(ram.available / (1024 ** 2), 1),
+                "percent": ram.percent
+            }
+            stats.append(ram_usage)
+        except:
+            stats.append(None)
+    else:
+        stats.append(None)
 
-            read_speed = (read_bytes_2 - read_bytes_1) / (1024 * 1024)
-            write_speed = (write_bytes_2 - write_bytes_1) / (1024 * 1024)
+    if get_disk:
+        try:
+            # disk usage
+            disk_usages = []
+            disk_counters_1 = psutil.disk_io_counters(perdisk=True)
+            time.sleep(1)
+            disk_counters_2 = psutil.disk_io_counters(perdisk=True)
 
-            disk_usages.append({
-                "device": device,
-                "readSpeed": round(read_speed, 2),
-                "writeSpeed": round(write_speed, 2),
-            })
-    except:
-        disk_usages = None
+            for device in disk_counters_1:
+                read_bytes_1 = disk_counters_1[device].read_bytes
+                write_bytes_1 = disk_counters_1[device].write_bytes
+                read_bytes_2 = disk_counters_2[device].read_bytes
+                write_bytes_2 = disk_counters_2[device].write_bytes
 
-    try:
-        # network usage
-        net1 = psutil.net_io_counters()
-        time.sleep(1)
-        net2 = psutil.net_io_counters()
+                read_speed = (read_bytes_2 - read_bytes_1) / (1024 * 1024)
+                write_speed = (write_bytes_2 - write_bytes_1) / (1024 * 1024)
 
-        upload_speed = round((net2.bytes_sent - net1.bytes_sent) / 1024 ** 2, 2)
-        download_speed = round((net2.bytes_recv - net1.bytes_recv) / 1024 ** 2, 2)
+                disk_usages.append({
+                    "device": device,
+                    "readSpeed": round(read_speed, 2),
+                    "writeSpeed": round(write_speed, 2),
+                })
+                stats.append(disk_usages)
+        except:
+            stats.append(None)
+    else:
+        stats.append(None)
 
-        network_usage = {
-            "up": upload_speed,
-            "down": download_speed
-        }
-    except:
-        network_usage = None
+    if get_network:
+        try:
+            # network usage
+            net1 = psutil.net_io_counters()
+            time.sleep(1)
+            net2 = psutil.net_io_counters()
 
-    try:
-        # battery stats
-        battery = psutil.sensors_battery()
-        battery_usage = {
-            "percent": battery.percent,
-            "pluggedIn": battery.power_plugged,
-            "timeLeftMins": battery.secsleft // 60 if battery.secsleft != psutil.POWER_TIME_UNLIMITED else 2147483640
-        }
-    except:
-        battery_usage = None
+            upload_speed = round((net2.bytes_sent - net1.bytes_sent) / 1024 ** 2, 2)
+            download_speed = round((net2.bytes_recv - net1.bytes_recv) / 1024 ** 2, 2)
 
-    return [cpu_usage, ram_usage, disk_usages, network_usage, battery_usage]
+            network_usage = {
+                "up": upload_speed,
+                "down": download_speed
+            }
+            stats.append(network_usage)
+        except:
+            stats.append(None)
+    else:
+        stats.append(None)
+
+    if get_battery:
+        try:
+            # battery stats
+            battery = psutil.sensors_battery()
+            battery_usage = {
+                "percent": battery.percent,
+                "pluggedIn": battery.power_plugged,
+                "timeLeftMins": battery.secsleft // 60 if battery.secsleft != psutil.POWER_TIME_UNLIMITED else 2147483640
+            }
+            stats.append(battery_usage)
+        except:
+            stats.append(None)
+    else:
+        stats.append(None)
+
+    return stats
 
 def _get_top_n_processes(n=5, type="cpu"):
     try:
