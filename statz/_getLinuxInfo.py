@@ -3,137 +3,143 @@ import psutil
 import subprocess
 import re
 
-def _get_linux_specs():
+def _get_linux_specs(get_os, get_cpu, get_ram, get_disk):
     '''
-    Get system specifications for Linux systems.\n
-    Returns 4 dictionaries: os_info, cpu_info, mem_info, disk_info
-    #### os_info
-    {\n
-    "system": System/OS Name,\n
-    "nodeName": Computer's network name,\n
-    "release": Release of the OS,\n
-    "version": Release version of the OS,\n
-    "machine": Machine type,\n
-    }
-    #### cpu_info
-    {\n
-    "processor": Processor name, **not** cpu name eg: amdk6,\n
-    "coreCountPhysical": Physical core count,\n
-    "coreCountLogical": Logical core count,\n
-    "cpuName": Name of the CPU,\n
-    "cpuFrequency": CPU Frequency in MHz,\n
-    }
-    #### mem_info
-    {\n
-    "totalRAM": Total system memory in GB,\n
-    "ramFrequency": RAM frequency in MHZ,\n
-    }
-    #### disk_info
-    {\n
-    "totalSpace": Total space in GB,\n
-    "usedSpace": Used space in GB,\n
-    "freeSpace": Free space in GB,\n
-    }
+    Get system specifications for Linux systems with selective fetching.
+
+    This function allows you to specify which components to fetch data for, improving performance by avoiding unnecessary computations.
+
+    Args:
+        get_os (bool): Whether to fetch OS specs.
+        get_cpu (bool): Whether to fetch CPU specs.
+        get_ram (bool): Whether to fetch RAM specs.
+        get_disk (bool): Whether to fetch disk specs.
+
+    Returns:
+        list: A list containing specs data for the specified components:
+        [os_info (dict), cpu_info (dict), mem_info (dict), disk_info (dict)].
+
+    Raises:
+        Exception: If fetching data for a specific component fails.
+
+    Note:
+        - Components not requested will return None in the corresponding list position.
     '''        
+    specs = []
+
     # os info
-    os_info = {}
-    try:
-        os_info["system"] = platform.system()
-        os_info["nodeName"] = platform.node()
-        os_info["release"] = platform.release()
-        os_info["version"] = platform.version()
-        os_info["machine"] = platform.machine()
-    except:
-        os_info["system"] = "Error"
-        os_info["nodeName"] = "Error"
-        os_info["release"] = "Error"
-        os_info["version"] = "Error"
-        os_info["machine"] = "Error"
-        
+    if get_os:
+        os_info = {}
+        try:
+            os_info["system"] = platform.system()
+            os_info["nodeName"] = platform.node()
+            os_info["release"] = platform.release()
+            os_info["version"] = platform.version()
+            os_info["machine"] = platform.machine()
+        except:
+            os_info["system"] = "Error"
+            os_info["nodeName"] = "Error"
+            os_info["release"] = "Error"
+            os_info["version"] = "Error"
+            os_info["machine"] = "Error"
+            os_info["processor"] = "Error"
+        specs.append(os_info)
+    else:
+        specs.append(None)
 
     # cpu info
-    cpu_info = {}
 
-    try:
-        cpu_info["processor"] = platform.processor()
-        cpu_info["coreCountPhysical"] = psutil.cpu_count(logical=False)
-        cpu_info["coreCountLogical"] = psutil.cpu_count()
-        
-        # get cpu name from /proc/cpuinfo
+    if get_cpu:
+        cpu_info = {}
         try:
-            with open('/proc/cpuinfo', 'r') as f:
-                for line in f:
-                    if 'model name' in line:
-                        cpu_info["cpuName"] = line.split(':')[1].strip()
-                        break
-            if "cpuName" not in cpu_info:
+            cpu_info["processor"] = platform.processor()
+            cpu_info["coreCountPhysical"] = psutil.cpu_count(logical=False)
+            cpu_info["coreCountLogical"] = psutil.cpu_count()
+            
+            # get cpu name from /proc/cpuinfo
+            try:
+                with open('/proc/cpuinfo', 'r') as f:
+                    for line in f:
+                        if 'model name' in line:
+                            cpu_info["cpuName"] = line.split(':')[1].strip()
+                            break
+                if "cpuName" not in cpu_info:
+                    cpu_info["cpuName"] = "Unknown"
+            except:
                 cpu_info["cpuName"] = "Unknown"
-        except:
-            cpu_info["cpuName"] = "Unknown"
-        
-        # get cpu frequency from /proc/cpuinfo
-        try:
-            with open('/proc/cpuinfo', 'r') as f:
-                for line in f:
-                    if 'cpu MHz' in line:
-                        freq = float(line.split(':')[1].strip())
-                        cpu_info["cpuFrequency"] = f"{freq:.2f} MHz"
-                        break
-            if "cpuFrequency" not in cpu_info:
+            
+            # get cpu frequency from /proc/cpuinfo
+            try:
+                with open('/proc/cpuinfo', 'r') as f:
+                    for line in f:
+                        if 'cpu MHz' in line:
+                            freq = float(line.split(':')[1].strip())
+                            cpu_info["cpuFrequency"] = f"{freq:.2f} MHz"
+                            break
+                if "cpuFrequency" not in cpu_info:
+                    cpu_info["cpuFrequency"] = "Unknown"
+            except:
                 cpu_info["cpuFrequency"] = "Unknown"
         except:
-            cpu_info["cpuFrequency"] = "Unknown"
-    except:
-        cpu_info["processor"] = "Error"
-        cpu_info["coreCountPhysical"] = "Error"
-        cpu_info["coreCountLogical"] = "Error"
-        cpu_info["cpuName"] = "Error"
-        cpu_info["cpuFrequency"] = "Error"
+            cpu_info["processor"] = "Error"
+            cpu_info["coreCountPhysical"] = "Error"
+            cpu_info["coreCountLogical"] = "Error"
+            cpu_info["cpuName"] = "Error"
+            cpu_info["cpuFrequency"] = "Error"
+        specs.append(cpu_info)
+    else:
+        specs.append(None)
 
     # ram info
-    mem_info = {}
-
-    try:
-        svmem = psutil.virtual_memory()
-        mem_info["totalRAM"] = f"{svmem.total / (1024**3):.2f} GB"
-        
-        # get ram frequency using dmidecode
+    if get_ram:
+        mem_info = {}
         try:
-            memory_result = subprocess.run(['dmidecode', '-t', 'memory'], 
-                                        capture_output=True, text=True)
-            if memory_result.returncode == 0:
-                memory_output = memory_result.stdout
-                speed_match = re.search(r'Speed:\s*(\d+)\s*MT/s', memory_output, re.IGNORECASE)
-                if speed_match:
-                    mem_info["ramFrequency"] = f"{speed_match.group(1)} MHz"
-                else:
-                    speed_match = re.search(r'Speed:\s*(\d+)\s*MHz', memory_output, re.IGNORECASE)
+            svmem = psutil.virtual_memory()
+            mem_info["totalRAM"] = f"{svmem.total / (1024**3):.2f} GB"
+            
+            # get ram frequency using dmidecode
+            try:
+                memory_result = subprocess.run(['dmidecode', '-t', 'memory'], 
+                                            capture_output=True, text=True)
+                if memory_result.returncode == 0:
+                    memory_output = memory_result.stdout
+                    speed_match = re.search(r'Speed:\s*(\d+)\s*MT/s', memory_output, re.IGNORECASE)
                     if speed_match:
                         mem_info["ramFrequency"] = f"{speed_match.group(1)} MHz"
                     else:
-                        mem_info["ramFrequency"] = "Unknown"
-            else:
+                        speed_match = re.search(r'Speed:\s*(\d+)\s*MHz', memory_output, re.IGNORECASE)
+                        if speed_match:
+                            mem_info["ramFrequency"] = f"{speed_match.group(1)} MHz"
+                        else:
+                            mem_info["ramFrequency"] = "Unknown"
+                else:
+                    mem_info["ramFrequency"] = "Unknown"
+            except:
                 mem_info["ramFrequency"] = "Unknown"
         except:
-            mem_info["ramFrequency"] = "Unknown"
-    except:
-        mem_info["totalRAM"] = "Error"
-        mem_info["ramFrequency"] = "Error"
+            mem_info["totalRAM"] = "Error"
+            mem_info["ramFrequency"] = "Error"
+        specs.append(mem_info)
+    else:
+        specs.append(None)
 
     # disk info
-    disk_info = {}
+    if get_disk:
+        disk_info = {}
+        try:
+            disk_usage = psutil.disk_usage('/')
+            disk_info["totalSpace"] = f"{disk_usage.total / (1024**3):.2f} GB"
+            disk_info["usedSpace"] = f"{disk_usage.used / ((1024**3) / 10):.2f} GB"
+            disk_info["freeSpace"] = f"{disk_usage.free / (1024**3):.2f} GB"
+        except:
+            disk_info["totalSpace"] = "Error"
+            disk_info["usedSpace"] = "Error"
+            disk_info["freeSpace"] = "Error"
+        specs.append(disk_info)
+    else:
+        specs.append(None)
 
-    try:
-        disk_usage = psutil.disk_usage('/')
-        disk_info["totalSpace"] = f"{disk_usage.total / (1024**3):.2f} GB"
-        disk_info["usedSpace"] = f"{disk_usage.used / ((1024**3) / 10):.2f} GB"
-        disk_info["freeSpace"] = f"{disk_usage.free / (1024**3):.2f} GB"
-    except:
-        disk_info["totalSpace"] = "Error"
-        disk_info["usedSpace"] = "Error"
-        disk_info["freeSpace"] = "Error"
-
-    return os_info, cpu_info, mem_info, disk_info
+    return specs
 
 def _get_linux_temps():
     temps = {}

@@ -2,195 +2,187 @@ import subprocess
 try:
     import wmi
 
-    def _get_windows_specs():
-        '''
-        Get all of the specifications of your Windows system.\n
-        It returns a list called specs. Inside the list, there are 7 items:\n
-        [os_data, cpu_data, gpu_data_list, ram_data_list, storage_data_list, network_data, battery_data].
+    def _get_windows_specs(get_os, get_cpu, get_gpu, get_ram, get_disk, get_network, get_battery):
+        """
+        Get all of the specifications of your Windows system with selective fetching.
 
-        ### Below is an index of each element in every dictionary or list.
-        #### os_data
-        {
-        "system": The name of your operating system. Ex. Microsoft Windows 10 Pro\n
-        "version": OS version number. Ex. 10.0.19042\n
-        "buildNumber": OS build number. Ex. 19042\n
-        "servicePackMajorVersion": Service pack version. Ex. 0\n
-        "architecture": OS architecture. Ex. 64-bit\n
-        "manufacturer": OS manufacturer. Ex. Microsoft Corporation\n
-        "serialNumber": OS serial number\n
-        }
-        #### cpu_data
-        {
-        "name": The name of your CPU. Ex. 11th Gen Intel(R) Core(TM) i5-1135G7 @2.40GHz\n
-        "manufacturer": Manufacturer of your CPU. Ex. GenuineIntel\n
-        "description": Some architecture information about your CPU. Ex. Intel64 Family 6 Model 140 Stepping 1\n
-        "coreCount": Core count of your CPU. Ex. 4\n
-        "clockSpeed": The clock speed of your CPU in megahertz. Ex. 2419}
-        #### gpu_data_list (list of dicts)
-        [
-        {\n
-            "name": ..., "driverVersion": ..., "videoProcessor": ..., "videoModeDesc": ..., "VRAM": ...\n
-        },\n
-        ...\n
-        ]
-        #### ram_data_list (list of dicts)
-        [
-        {\n
-            "capacity": ..., "speed": ..., "manufacturer": ..., "partNumber": ...
-        },\n
-        ...\n
-        ]
-        #### storage_data_list (list of dicts)[
-        {\n
-            "model": ..., "interfaceType": ..., "mediaType": ..., "size": ..., "serialNumber": ...\n
-        },\n
-        ...\n
-        ]
-        #### network_data{
-        "name": The name of the network adapter. Ex. Intel(R) Wireless-AC 9462\n
-        "macAddress": Your MAC Address. Ex. DC:21:48:DF:E9:68\n
-        "manufacturer": Who made the device. Ex. Intel Corporation\n
-        "adapterType": The type of the adapter, like Ethernet or WiFi. Ex. Ethernet 802.3\n
-        "speed": The speed of the adapter in MBPS. Ex. 433.3\n}
-        #### battery_data{
-        "name": The model of your battery. Ex. NVMe BC711 NVMe SK hynix 256GB\n
-        "estimatedChargeRemaining": How much percentage battery you have left. Ex. SCSI\n
-        "batteryStatus": Status of the battery. Ex. Charging\n
-        "designCapacity": The design capacity of the battery. Ex. 5000 mWh\n
-        "fullChargeCapacity": The current capacity of the battery. Ex. 4950 mWh} 
+        This function allows you to specify which components to fetch data for, improving performance by avoiding unnecessary computations.
 
-        ### Notes:
-        * If anything returns None, it means it could not be found.\n
-        * For the GPU, RAM, Storage, and Network Adapters, it will return a list with all of your hardware of that category.\n
-        '''
-        # main system component
+        Args:
+            get_os (bool): Whether to fetch OS specs.
+            get_cpu (bool): Whether to fetch CPU specs.
+            get_gpu (bool): Whether to fetch GPU specs.
+            get_ram (bool): Whether to fetch RAM specs.
+            get_disk (bool): Whether to fetch disk specs.
+            get_network (bool): Whether to fetch network specs.
+            get_battery (bool): Whether to fetch battery specs.
+
+        Returns:
+            list: A list containing specs data for the specified components:
+            [os_data (dict), cpu_data (dict), gpu_data_list (list of dicts), ram_data_list (list of dicts),
+            storage_data_list (list of dicts), network_data (dict), battery_data (dict)].
+
+        Raises:
+            Exception: If fetching data for a specific component fails.
+
+        Note:
+            - Components not requested will return None in the corresponding list position.
+            - GPU, network, and battery specs are only available on Windows.
+        """
+        specs = []
+
+        # Initialize WMI client
         c = wmi.WMI()
 
-        try:
-            # get os info
-            os_data = {}
-            for os in c.Win32_OperatingSystem():
-                os_data["system"] = os.Name.split('|')[0].strip()
-                os_data["version"] = os.Version
-                os_data["buildNumber"] = os.BuildNumber
-                os_data["servicePackMajorVersion"] = os.ServicePackMajorVersion
-                os_data["architecture"] = os.OSArchitecture
-                os_data["manufacturer"] = os.Manufacturer
-                os_data["serialNumber"] = os.SerialNumber
-                break
-        except:
-            os_data = None
+        # os info
+        if get_os:
+            try:
+                os_data = {}
+                for os in c.Win32_OperatingSystem():
+                    os_data["system"] = os.Name.split('|')[0].strip()
+                    os_data["version"] = os.Version
+                    os_data["buildNumber"] = os.BuildNumber
+                    os_data["servicePackMajorVersion"] = os.ServicePackMajorVersion
+                    os_data["architecture"] = os.OSArchitecture
+                    os_data["manufacturer"] = os.Manufacturer
+                    os_data["serialNumber"] = os.SerialNumber
+                    break
+            except:
+                os_data = None
+            specs.append(os_data)
+        else:
+            specs.append(None)
 
-        try:
-            # get cpu info
-            cpu_data = {}
-            for cpu in c.Win32_Processor():
-                cpu_data["name"] = cpu.Name
-                cpu_data["manufacturer"] = cpu.Manufacturer
-                cpu_data["description"] = cpu.Description
-                cpu_data["coreCount"] = cpu.NumberOfCores
-                cpu_data["clockSpeed"] = cpu.MaxClockSpeed
-        except:
-            cpu_data = None
+        # cpu info
+        if get_cpu:
+            try:
+                cpu_data = {}
+                for cpu in c.Win32_Processor():
+                    cpu_data["name"] = cpu.Name
+                    cpu_data["manufacturer"] = cpu.Manufacturer
+                    cpu_data["description"] = cpu.Description
+                    cpu_data["coreCount"] = cpu.NumberOfCores
+                    cpu_data["clockSpeed"] = cpu.MaxClockSpeed
+            except:
+                cpu_data = None
+            specs.append(cpu_data)
+        else:
+            specs.append(None)
 
-        try:
-            # get gpu info (list)
-            gpu_data_list = []
-            for gpu in c.Win32_VideoController():
-                gpu_data = {
-                    "name": gpu.Name,
-                    "driverVersion": gpu.DriverVersion,
-                    "videoProcessor": gpu.Description,
-                    "videoModeDesc": gpu.VideoModeDescription,
-                    "VRAM": int(gpu.AdapterRAM) // (1024 ** 2)
-                }
-                gpu_data_list.append(gpu_data)
-        except:
-            gpu_data_list = None
+        # gpu info
+        if get_gpu:
+            try:
+                gpu_data_list = []
+                for gpu in c.Win32_VideoController():
+                    gpu_data = {
+                        "name": gpu.Name,
+                        "driverVersion": gpu.DriverVersion,
+                        "videoProcessor": gpu.Description,
+                        "videoModeDesc": gpu.VideoModeDescription,
+                        "VRAM": int(gpu.AdapterRAM) // (1024 ** 2)
+                    }
+                    gpu_data_list.append(gpu_data)
+            except:
+                gpu_data_list = None
+            specs.append(gpu_data_list)
+        else:
+            specs.append(None)
 
-        try:
-            # get ram info (list)
-            ram_data_list = []
-            for ram in c.Win32_PhysicalMemory():
-                ram_data = {
-                    "capacity": int(ram.Capacity) // (1024 ** 2),
-                    "speed": ram.Speed,
-                    "manufacturer": ram.Manufacturer.strip(),
-                    "partNumber": ram.PartNumber.strip()
-                }
-                ram_data_list.append(ram_data)
-        except:
-            ram_data_list = None
+        # ram info
+        if get_ram:
+            try:
+                ram_data_list = []
+                for ram in c.Win32_PhysicalMemory():
+                    ram_data = {
+                        "capacity": int(ram.Capacity) // (1024 ** 2),
+                        "speed": ram.Speed,
+                        "manufacturer": ram.Manufacturer.strip(),
+                        "partNumber": ram.PartNumber.strip()
+                    }
+                    ram_data_list.append(ram_data)
+            except:
+                ram_data_list = None
+            specs.append(ram_data_list)
+        else:
+            specs.append(None)
 
-        try:
-            # get storage info (list)
-            storage_data_list = []
-            for disk in c.Win32_DiskDrive():
-                storage_data = {
-                    "model": disk.Model,
-                    "interfaceType": disk.InterfaceType,
-                    "mediaType": getattr(disk, "MediaType", "Unknown"),
-                    "size": int(disk.Size) // (1024**3) if disk.Size else None,
-                    "serialNumber": disk.SerialNumber.strip() if disk.SerialNumber else "N/A"
-                }
-                storage_data_list.append(storage_data)
-        except:
-            storage_data_list = None
-        
-        try:
-            # get network/wifi info
-            network_data = {}
-            for nic in c.Win32_NetworkAdapter():
-                if nic.PhysicalAdapter and nic.NetEnabled:
-                    network_data["name"] = nic.Name
-                    network_data["macAddress"] = nic.MACAddress
-                    network_data["manufacturer"] = nic.Manufacturer
-                    network_data["adapterType"] = nic.AdapterType
-                    network_data["speed"] = int(nic.Speed) / 1000000
-        except:
-            network_data = None
+        # disk info
+        if get_disk:
+            try:
+                storage_data_list = []
+                for disk in c.Win32_DiskDrive():
+                    storage_data = {
+                        "model": disk.Model,
+                        "interfaceType": disk.InterfaceType,
+                        "mediaType": getattr(disk, "MediaType", "Unknown"),
+                        "size": int(disk.Size) // (1024**3) if disk.Size else None,
+                        "serialNumber": disk.SerialNumber.strip() if disk.SerialNumber else "N/A"
+                    }
+                    storage_data_list.append(storage_data)
+            except:
+                storage_data_list = None
+            specs.append(storage_data_list)
+        else:
+            specs.append(None)
 
-        try:
-            # get battery info
-            battery_data = {}
-            for batt in c.Win32_Battery():
-                battery_data["name"] = batt.Name
-                battery_data["estimatedChargeRemaining"] = batt.EstimatedChargeRemaining
+        # network info
+        if get_network:
+            try:
+                network_data = {}
+                for nic in c.Win32_NetworkAdapter():
+                    if nic.PhysicalAdapter and nic.NetEnabled:
+                        network_data["name"] = nic.Name
+                        network_data["macAddress"] = nic.MACAddress
+                        network_data["manufacturer"] = nic.Manufacturer
+                        network_data["adapterType"] = nic.AdapterType
+                        network_data["speed"] = int(nic.Speed) / 1000000
+            except:
+                network_data = None
+            specs.append(network_data)
+        else:
+            specs.append(None)
 
-                # interpret battery status
-                match int(batt.BatteryStatus):
-                    case 1:
-                        battery_data["batteryStatus"] = "Discharging"
-                    case 2:
-                        battery_data["batteryStatus"] = "Plugged In, Fully Charged"
-                    case 3:
-                        battery_data["batteryStatus"] = "Fully Charged"
-                    case 4:
-                        battery_data["batteryStatus"] = "Low Battery"
-                    case 5:
-                        battery_data["batteryStatus"] = "Critical Battery"
-                    case 6:
-                        battery_data["batteryStatus"] = "Charging"
-                    case 7:
-                        battery_data["batteryStatus"] = "Charging (High)"
-                    case 8:
-                        battery_data["batteryStatus"] = "Charging (Low)"
-                    case 9:
-                        battery_data["batteryStatus"] = "Charging (Critical)"
-                    case 10:
-                        battery_data["batteryStatus"] = "Unknown"
-                    case 11:
-                        battery_data["batteryStatus"] = "Partially Charged"
-                    case _:
-                        battery_data["batteryStatus"] = "Unknown"
-                    
-                battery_data["designCapacity"] = getattr(batt, "DesignCapacity", "N/A")
-                battery_data["fullChargeCapacity"] = getattr(batt, "FullChargeCapacity", "N/A")
-        except:
-            battery_data = None
+        # battery info
+        if get_battery:
+            try:
+                battery_data = {}
+                for batt in c.Win32_Battery():
+                    battery_data["name"] = batt.Name
+                    battery_data["estimatedChargeRemaining"] = batt.EstimatedChargeRemaining
+                    match int(batt.BatteryStatus):
+                        case 1:
+                            battery_data["batteryStatus"] = "Discharging"
+                        case 2:
+                            battery_data["batteryStatus"] = "Plugged In, Fully Charged"
+                        case 3:
+                            battery_data["batteryStatus"] = "Fully Charged"
+                        case 4:
+                            battery_data["batteryStatus"] = "Low Battery"
+                        case 5:
+                            battery_data["batteryStatus"] = "Critical Battery"
+                        case 6:
+                            battery_data["batteryStatus"] = "Charging"
+                        case 7:
+                            battery_data["batteryStatus"] = "Charging (High)"
+                        case 8:
+                            battery_data["batteryStatus"] = "Charging (Low)"
+                        case 9:
+                            battery_data["batteryStatus"] = "Charging (Critical)"
+                        case 10:
+                            battery_data["batteryStatus"] = "Unknown"
+                        case 11:
+                            battery_data["batteryStatus"] = "Partially Charged"
+                        case _:
+                            battery_data["batteryStatus"] = "Unknown"
+                    battery_data["designCapacity"] = getattr(batt, "DesignCapacity", "N/A")
+                    battery_data["fullChargeCapacity"] = getattr(batt, "FullChargeCapacity", "N/A")
+            except:
+                battery_data = None
+            specs.append(battery_data)
+        else:
+            specs.append(None)
 
-        # return everything
-        return os_data, cpu_data, gpu_data_list, ram_data_list, storage_data_list, network_data, battery_data
+        return specs
     
     def _get_windows_temps():
         """

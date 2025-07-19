@@ -138,33 +138,35 @@ def get_component_specs(args):
 def get_component_usage(args):
     """Get usage for specific components based on OS and requested components."""
     current_os = platform.system()
-    
+
     # Get all usage data first
     try:
         all_usage = stats.get_hardware_usage(
+            get_os=args.os,
             get_cpu=args.cpu,
+            get_gpu=args.gpu,
             get_ram=args.ram,
             get_disk=args.disk,
             get_network=args.network,
             get_battery=args.battery
         )
-        # Returns: cpu_usage, ram_usage, disk_usages, network_usage, battery_usage
+        # Returns: os_usage, cpu_usage, gpu_usage, ram_usage, disk_usages, network_usage, battery_usage
         result = {}
-        
+
         if args.os:
             result["os"] = {"system": current_os, "platform": platform.platform()}
         if args.cpu:
-            result["cpu"] = all_usage[0]
+            result["cpu"] = all_usage[1]
         if args.gpu:
-            result["gpu"] = {"error": "GPU usage not supported due to lack of Python bindings for AMD and Intel GPUs"}
+            result["gpu"] = all_usage[2]
         if args.ram:
-            result["ram"] = all_usage[1]
+            result["ram"] = all_usage[3]
         if args.disk:
-            result["disk"] = all_usage[2]
+            result["disk"] = all_usage[4]
         if args.network:
-            result["network"] = all_usage[3]
+            result["network"] = all_usage[5]
         if args.battery:
-            result["battery"] = all_usage[4]
+            result["battery"] = all_usage[6]
         if args.temp:
             try:
                 temp_data = stats.get_system_temps()
@@ -183,10 +185,10 @@ def get_component_usage(args):
                     result["processes"] = {"error": "Process information not available on this system"}
             except Exception as e:
                 result["processes"] = {"error": f"Process monitoring failed: {str(e)}"}
-            
+
     except Exception as e:
         result = {"error": f"Usage data not available on {current_os}: {str(e)}"}
-    
+
     return result
 
 def main():

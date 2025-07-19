@@ -37,132 +37,46 @@ def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=Tr
     else:
         raise OSError("Unsupported operating system")
 
-def get_system_specs():
+def get_system_specs(get_os=True, get_cpu=True, get_gpu=True, get_ram=True, get_disk=True, get_network=True, get_battery=True):
     '''
-    # Get system specs on all platforms.\n
-    ## On Windows:
-    Returns 7 lists/dictionaries: os_data, cpu_data, gpu_data_list, ram_data_list, storage_data_list, network_data, and battery_data
-    #### os_data
-    {
-    "system": The name of your operating system. Ex. Microsoft Windows 10 Pro\n
-    "version": OS version number. Ex. 10.0.19042\n
-    "buildNumber": OS build number. Ex. 19042\n
-    "servicePackMajorVersion": Service pack version. Ex. 0\n
-    "architecture": OS architecture. Ex. 64-bit\n
-    "manufacturer": OS manufacturer. Ex. Microsoft Corporation\n
-    "serialNumber": OS serial number\n
-    }
-    #### cpu_data
-    {
-    "name": The name of your CPU. Ex. 11th Gen Intel(R) Core(TM) i5-1135G7 @2.40GHz\n
-    "manufacturer": Manufacturer of your CPU. Ex. GenuineIntel\n
-    "description": Some architecture information about your CPU. Ex. Intel64 Family 6 Model 140 Stepping 1\n
-    "coreCount": Core count of your CPU. Ex. 4\n
-    "clockSpeed": The clock speed of your CPU in megahertz. Ex. 2419}
-    #### gpu_data_list (list of dicts)
-    [
-      {\n
-        "name": ..., "driverVersion": ..., "videoProcessor": ..., "videoModeDesc": ..., "VRAM": ...\n
-      },\n
-      ...\n
-    ]
-    #### ram_data_list (list of dicts)
-    [
-      {\n
-        "capacity": ..., "speed": ..., "manufacturer": ..., "partNumber": ...
-      },\n
-      ...\n
-    ]
-    #### storage_data_list (list of dicts)[
-      {\n
-        "model": ..., "interfaceType": ..., "mediaType": ..., "size": ..., "serialNumber": ...\n
-      },\n
-      ...\n
-    ]
-    #### network_data{
-    "name": The name of the network adapter. Ex. Intel(R) Wireless-AC 9462\n
-    "macAddress": Your MAC Address. Ex. DC:21:48:DF:E9:68\n
-    "manufacturer": Who made the device. Ex. Intel Corporation\n
-    "adapterType": The type of the adapter, like Ethernet or WiFi. Ex. Ethernet 802.3\n
-    "speed": The speed of the adapter in MBPS. Ex. 433.3\n}
-    #### battery_data{
-    "name": The model of your battery. Ex. NVMe BC711 NVMe SK hynix 256GB\n
-    "estimatedChargeRemaining": How much percentage battery you have left. Ex. SCSI\n
-    "batteryStatus": Status of the battery. Ex. Charging\n
-    "designCapacity": The design capacity of the battery. Ex. 5000 mWh\n
-    "fullChargeCapacity": The current capacity of the battery. Ex. 4950 mWh} 
+    Get system specs on all platforms with selective fetching.
 
-    ### Notes:
-    * If anything returns None, it means it could not be found.\n
-    * For the GPU, RAM, and Storage, it will return a list with all of your hardware of that category.\n
+    This function allows you to specify which components to fetch data for, improving performance by avoiding unnecessary computations.
 
-    ## On Mac
-    Returns 4 dictionaries: os_info, cpu_info, mem_info, disk_info
-    #### os_info
-    {\n
-    "system": System/OS Name,\n
-    "nodeName": Computer's network name,\n
-    "release": Release of the OS,\n
-    "version": Release version of the OS,\n
-    "machine": Machine type,\n
-    }
-    #### cpu_info
-    {\n
-    "processor": Processor name, **not** cpu name eg: amdk6,\n
-    "coreCountPhysical": Physical core count,\n
-    "coreCountLogical": Logical core count,\n
-    "cpuName": Name of the CPU,\n
-    "cpuFrequency": CPU Frequency in MHz,\n
-    }
-    #### mem_info
-    {\n
-    "totalRAM": Total system memory in GB,\n
-    "ramFrequency": RAM frequency in MHZ,\n
-    }
-    #### disk_info
-    {\n
-    "totalSpace": Total space in GB,\n
-    "usedSpace": Used space in GB,\n
-    "freeSpace": Free space in GB,\n
+    Args:
+        get_os (bool): Whether to fetch OS specs.
+        get_cpu (bool): Whether to fetch CPU specs.
+        get_gpu (bool): Whether to fetch GPU specs (Windows only).
+        get_ram (bool): Whether to fetch RAM specs.
+        get_disk (bool): Whether to fetch disk specs.
+        get_network (bool): Whether to fetch network specs (Windows only).
+        get_battery (bool): Whether to fetch battery specs (Windows only).
 
-    ## On Linux
-    Returns 4 dictionaries: os_info, cpu_info, mem_info, disk_info
-    #### os_info
-    {\n
-    "system": System/OS Name,\n
-    "nodeName": Computer's network name,\n
-    "release": Release of the OS,\n
-    "version": Release version of the OS,\n
-    "machine": Machine type,\n
-    }
-    #### cpu_info
-    {\n
-    "processor": Processor name, **not** cpu name eg: amdk6,\n
-    "coreCountPhysical": Physical core count,\n
-    "coreCountLogical": Logical core count,\n
-    "cpuName": Name of the CPU,\n
-    "cpuFrequency": CPU Frequency in MHz,\n
-    }
-    #### mem_info
-    {\n
-    "totalRAM": Total system memory in GB,\n
-    "ramFrequency": RAM frequency in MHZ,\n
-    }
-    #### disk_info
-    {\n
-    "totalSpace": Total space in GB,\n
-    "usedSpace": Used space in GB,\n
-    "freeSpace": Free space in GB,\n
-    }
+    Returns:
+        list: A list containing specs data for the specified components. The structure of the list varies by platform:
+
+        **macOS/Linux**:
+        [os_info (dict), cpu_info (dict), mem_info (dict), disk_info (dict)]
+
+        **Windows**:
+        [os_data (dict), cpu_data (dict), gpu_data_list (list of dicts), ram_data_list (list of dicts),
+        storage_data_list (list of dicts), network_data (dict), battery_data (dict)]
+
+    Raises:
+        OSError: If the operating system is unsupported.
+
+    Note:
+        - On macOS and Linux, GPU, network, and battery specs are not available.
+        - On Windows, GPU, network, and battery specs are included if requested.
     '''
     operatingSystem = platform.system()
 
-    if operatingSystem == "Darwin": # macOS
-        return _get_mac_specs()
-    elif operatingSystem == "Linux": # Linux
-        return _get_linux_specs()
-    elif operatingSystem == "Windows": # Windows
-        return _get_windows_specs()
+    if operatingSystem == "Darwin":  # macOS
+        return _get_mac_specs(get_os, get_cpu, get_ram, get_disk)
+    elif operatingSystem == "Linux":  # Linux
+        return _get_linux_specs(get_os, get_cpu, get_ram, get_disk)
+    elif operatingSystem == "Windows":  # Windows
+        return _get_windows_specs(get_os, get_cpu, get_gpu, get_ram, get_disk, get_network, get_battery)
     else:
         raise OSError("Unsupported operating system")
 
