@@ -166,17 +166,18 @@ statz --dashboard
 
 ## 📝 Changelog
 
-### [v1.0.0 – First Stable Release](https://github.com/hellonearth311/Statz/releases/tag/v1.0.0) 🎉
-- Added exporting to the base module instead of just the CLI 📤
-  - You can now export data programmatically using the `export_into_file()` function
-- Live dashboard 📊
-  - New real-time dashboard feature for monitoring system metrics (`statz --dashboard`)
-  - Interactive interface showing CPU, memory, disk I/O, network, battery, and temperature data
-  - Updates in real-time with colored indicators and progress bars
-- Fixed GPU specs output in CLI 💻
-  - GPU information now displays properly formatted instead of raw dictionary output
-- Fixed broken top N processes ⬆️
-  - Process monitoring now correctly shows the highest resource-consuming processes
+### [v1.1.0 – Performance Improvements](https://github.com/hellonearth311/Statz/releases/tag/v1.1.0) 🚀
+- Selective Fetching for System Specs 🛠️
+  - Improved performance by allowing selective fetching of system specifications.
+  - Added support for fetching only requested components (e.g., CPU, RAM, Disk) to avoid unnecessary computations.
+- Enhanced CLI Integration 💻
+  - Updated CLI to support selective fetching flags for `--specs` and `--usage`.
+  - Improved error handling and default values for missing or unsupported components.
+- Refactored Platform-Specific Functions 🧹
+  - Updated `_get_windows_specs`, `_get_linux_specs`, and `_get_mac_specs` to handle selective fetching.
+  - Added meaningful error messages and default values for null or missing data.
+- Documentation Updates 📚
+  - Updated docstrings across platform-specific functions to reflect performance improvements.
 
 ## 📝 Side Note
 If you find any errors on Linux, please report them to me with as much detail as possible as I do not have a Linux machine.
