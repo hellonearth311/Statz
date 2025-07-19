@@ -13,7 +13,7 @@ import platform
 from datetime import datetime, date
 import json
 
-def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=True, get_battery=True):
+def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=True, get_battery=True, **kwargs):
     '''
     Get real-time usage data for specified system components. 
 
@@ -25,6 +25,7 @@ def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=Tr
         get_disk (bool): Whether to fetch disk usage data.
         get_network (bool): Whether to fetch network usage data.
         get_battery (bool): Whether to fetch battery usage data.
+        **kwargs: Additional keyword arguments to ensure compatibility with CLI logic.
 
     Returns:
         list: A list containing usage data for the specified components in the following order:

@@ -166,18 +166,9 @@ statz --dashboard
 
 ## 📝 Changelog
 
-### [v1.1.0 – Performance Improvements](https://github.com/hellonearth311/Statz/releases/tag/v1.1.0) 🚀
-- Selective Fetching for System Specs 🛠️
-  - Improved performance by allowing selective fetching of system specifications.
-  - Added support for fetching only requested components (e.g., CPU, RAM, Disk) to avoid unnecessary computations.
-- Enhanced CLI Integration 💻
-  - Updated CLI to support selective fetching flags for `--specs` and `--usage`.
-  - Improved error handling and default values for missing or unsupported components.
-- Refactored Platform-Specific Functions 🧹
-  - Updated `_get_windows_specs`, `_get_linux_specs`, and `_get_mac_specs` to handle selective fetching.
-  - Added meaningful error messages and default values for null or missing data.
-- Documentation Updates 📚
-  - Updated docstrings across platform-specific functions to reflect performance improvements.
+### [v1.1.1 – Minor Patch](https://github.com/hellonearth311/Statz/releases/tag/v1.1.1) 🩹
+- Fixed Windows Issue with `_get_usage` spitting out an error
+- I guess this is what happens when you don't test before throwing it out into production 😭
 
 ## 📝 Side Note
 If you find any errors on Linux, please report them to me with as much detail as possible as I do not have a Linux machine.
