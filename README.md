@@ -166,7 +166,7 @@ statz --dashboard
 
 ## 📝 Changelog
 
-### v1.0.0 – First Stable Release 🎉
+### [v1.0.0 – First Stable Release](https://github.com/hellonearth311/Statz/releases/tag/v1.0.0) 🎉
 - Added exporting to the base module instead of just the CLI 📤
   - You can now export data programmatically using the `export_into_file()` function
 - Live dashboard 📊
