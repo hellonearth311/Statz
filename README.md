@@ -26,7 +26,7 @@ pip install statz
 
 ---
 
-## �️ CLI Usage
+## 💻 CLI Usage
 
 **statz** comes with a powerful command-line interface that lets you get system information right from your terminal.
 
