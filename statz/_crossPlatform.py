@@ -1,6 +1,10 @@
 import psutil
 import time
 import platform
+import math
+import gc
+import os
+import tempfile
 
 # Import platform-specific temperature functions
 try:
@@ -405,3 +409,157 @@ def _system_health_score(cliVersion=False):
         if cliVersion:
             return {"error": str(e)}
         return 0
+
+def _cpu_benchmark():
+    '''
+    Get CPU performance with some computational tasks, such as:\n
+    - Calculating large Fibonacci numbers\n
+    - Calculating large primes\n
+
+    Returns:
+     dict: {\n
+     "execution_time": time taken to execute (lower is better),\n
+     "fibonacci_10000th": fibonacci number computed,\n
+     "prime_count": prime number calculated in benchmark,\n
+     "score": score calculated (higher is better)\n
+     }
+    '''
+    # start the clock
+    start_time = time.time()
+
+    # compute the first 10000 fib numbers
+    n = 10000
+    count = 0
+    a, b = 0, 1
+    while count < n:
+        count += 1
+        a, b = b, a + b
+    
+    # calculate prime numbers up to 10000
+    def is_prime(n):
+        if n < 2:
+            return False
+        for i in range(2, int(math.sqrt(n)) + 1):
+            if n % i == 0:
+                return False
+        return True
+    
+    prime_count = sum(1 for i in range(2, 10000) if is_prime(i))
+
+    # end the clock
+    end_time = time.time()
+    time_taken = end_time - start_time
+    
+    # calculate score (higher is better)
+    baseline_time = 1.5
+    score = max(0, (baseline_time / time_taken) * 100)
+    
+    return {
+        "execution_time": round(time_taken, 3),
+        "fibonacci_10000th": str(a)[:50] + "..." if len(str(a)) > 50 else str(a),
+        "prime_count": prime_count,
+        "score": round(score, 1)
+    }
+
+def _mem_benchmark():
+    '''Benchmark memory allocation and access speed using large lists
+    Returns:
+     dict: {\n
+     "execution_time": time taken to execute the program (lower is better),\n
+     "sum_calculated": total sum calculated during the test,\n
+     "score": the performance score on your ram (higher is better)\n
+     }
+    '''
+
+    # start clock
+    start_time = time.time()
+
+    large_list = []
+    for i in range(1000000):
+        large_list.append(i * 2)
+    
+    total = sum(large_list)
+
+    copied_list = large_list.copy()
+
+    del large_list, copied_list
+    gc.collect()
+
+    end_time = time.time()
+    time_taken = end_time - start_time
+
+    # calculate score
+    baseline = 1.0
+    score = max(0, (baseline / time_taken) * 100)
+
+    return {
+        "execution_time": round(time_taken, 3),
+        "sum_calculated": total,
+        "score": round(score, 1)
+    }
+
+def _disk_benchmark():
+    '''
+    Benchmark disk I/O performance by writing and reading a 10MB test file.
+    
+    Returns:
+     dict: {
+     "write_speed": Write speed in MB/s,
+     "read_speed": Read speed in MB/s, 
+     "write_score": Write performance score (higher is better),
+     "read_score": Read performance score (higher is better),
+     "overall_score": Overall disk performance score (higher is better)
+     }
+    '''
+    
+    # create tempfile
+    with tempfile.NamedTemporaryFile(delete=False) as temp_file:
+        temp_path = temp_file.name
+    
+    try:
+        # write test
+        start_time = time.time()
+        test_data = b"0" * (10 * 1024 * 1024) # 10mb
+
+        with open(temp_path, 'wb') as f:
+            f.write(test_data)
+            f.flush()
+            os.fsync(f.fileno())
+        
+        write_time = time.time() - start_time
+
+        # read test
+        start_time = time.time()
+        with open(temp_path, 'rb') as f:
+            read_data = f.read()
+
+        read_time = time.time() - start_time
+
+        # calc speed
+        file_size_mb = len(test_data) / (1024 * 1024)
+        write_speed = file_size_mb / write_time
+        read_speed = file_size_mb / read_time
+
+        # scoring (uncapped, higher is better)
+        # Baseline speeds: 100 MB/s for average HDD performance
+        write_baseline = 100  # MB/s
+        read_baseline = 100   # MB/s
+        
+        write_score = max(0, (write_speed / write_baseline) * 100)
+        read_score = max(0, (read_speed / read_baseline) * 100)
+        overall_score = (write_score + read_score) / 2
+
+        return {
+            "write_speed": round(write_speed, 1),
+            "read_speed": round(read_speed, 1),
+            "write_score": round(write_score, 1),
+            "read_score": round(read_score, 1),
+            "overall_score": round(overall_score, 1)
+        }
+
+    finally:
+        # cleanup
+        try:
+            os.unlink(temp_path)
+        except:
+            pass
