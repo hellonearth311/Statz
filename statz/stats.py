@@ -13,7 +13,7 @@ import platform
 from datetime import datetime, date
 import json
 
-__version__ = "1.1.1"
+__version__ = "1.2.0"
 
 def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=True, get_battery=True, **kwargs):
     '''
