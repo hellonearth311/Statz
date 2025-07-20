@@ -2,12 +2,12 @@ try:
     from ._getMacInfo import _get_mac_specs, _get_mac_temps
     from ._getWindowsInfo import _get_windows_specs, _get_windows_temps
     from ._getLinuxInfo import _get_linux_specs, _get_linux_temps
-    from ._crossPlatform import _get_usage, _get_top_n_processes, _system_health_score
+    from ._crossPlatform import _get_usage, _get_top_n_processes, _system_health_score, _cpu_benchmark, _mem_benchmark, _disk_benchmark
 except ImportError:
     from _getMacInfo import _get_mac_specs, _get_mac_temps
     from _getWindowsInfo import _get_windows_specs, _get_windows_temps
     from _getLinuxInfo import _get_linux_specs, _get_linux_temps
-    from _crossPlatform import _get_usage, _get_top_n_processes, _system_health_score
+    from _crossPlatform import _get_usage, _get_top_n_processes, _system_health_score, _cpu_benchmark, _mem_benchmark, _disk_benchmark
 
 import platform
 from datetime import datetime, date
@@ -202,11 +202,59 @@ def system_health_score(cliVersion=False):
 
     return _system_health_score(cliVersion)
 
+def cpu_benchmark():
+    '''
+    Get CPU performance with some computational tasks, such as:\n
+    - Calculating large Fibonacci numbers\n
+    - Calculating large primes\n
+
+    Returns:
+     dict: {\n
+     "execution_time": time taken to execute (lower is better),\n
+     "fibonacci_10000th": fibonacci number computed,\n
+     "prime_count": prime number calculated in benchmark,\n
+     "score": score calculated (higher is better)\n
+     }
+     '''
+    
+    return _cpu_benchmark()
+
+def mem_benchmark():
+    '''Benchmark memory allocation and access speed using large lists
+    Returns:
+     dict: {\n
+     "execution_time": time taken to execute the program (lower is better),\n
+     "sum_calculated": total sum calculated during the test,\n
+     "score": the performance score on your ram (higher is better)\n
+     }
+    '''
+
+    return _mem_benchmark()
+
+def disk_benchmark():
+    '''
+    Benchmark disk I/O performance by writing and reading a 10MB test file.
+    
+    Returns:
+     dict: {
+     "write_speed": Write speed in MB/s,
+     "read_speed": Read speed in MB/s, 
+     "write_score": Write performance score (higher is better),
+     "read_score": Read performance score (higher is better),
+     "overall_score": Overall disk performance score (higher is better)
+     }
+    '''
+
+    return _disk_benchmark()
+
 if __name__ == "__main__":
     # print(get_hardware_usage())
     # print(get_system_specs())
     # print(get_system_temps())
     # print(get_top_n_processes())
     # export_into_file(get_hardware_usage)
-    print(system_health_score())
-    print(system_health_score(cliVersion=True))
+    # print(system_health_score())
+    # print(system_health_score(cliVersion=True))
+    print(cpu_benchmark())
+    print(mem_benchmark())
+    print(disk_benchmark())

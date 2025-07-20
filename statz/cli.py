@@ -96,6 +96,74 @@ def format_health_data(health_data):
     else:
         return str(health_data)
 
+def format_benchmark_data(benchmark_data):
+    """Format benchmark data for display with colors."""
+    if isinstance(benchmark_data, dict) and "error" in benchmark_data:
+        return f"{Fore.RED}{benchmark_data['error']}{Style.RESET_ALL}"
+    elif isinstance(benchmark_data, dict):
+        formatted_output = []
+        
+        for component, data in benchmark_data.items():
+            if isinstance(data, dict):
+                # Format component header
+                formatted_output.append(f"\n  {component.upper()} Benchmark:")
+                
+                # Color code scores
+                score = data.get('score', 0)
+                if score >= 200:
+                    color = Fore.GREEN
+                    rating = "Excellent 🚀"
+                elif score >= 150:
+                    color = Fore.GREEN
+                    rating = "Very Good 🟢"
+                elif score >= 100:
+                    color = Fore.YELLOW
+                    rating = "Good 🟡"
+                elif score >= 75:
+                    color = Fore.YELLOW
+                    rating = "Fair 🟠"
+                else:
+                    color = Fore.RED
+                    rating = "Poor 🔴"
+                
+                # Display results
+                for key, value in data.items():
+                    if key == 'score':
+                        formatted_output.append(f"    {color}{key}: {value} ({rating}){Style.RESET_ALL}")
+                    else:
+                        formatted_output.append(f"    {key}: {value}")
+        
+        return "\n".join(formatted_output)
+    else:
+        return str(benchmark_data)
+
+def get_component_benchmarks(args):
+    """Run benchmarks for specific components."""
+    result = {}
+    
+    if args.cpu:
+        print("Running CPU benchmark...")
+        try:
+            result["cpu"] = stats.cpu_benchmark()
+        except Exception as e:
+            result["cpu"] = {"error": f"CPU benchmark failed: {str(e)}"}
+    
+    if args.ram:
+        print("Running memory benchmark...")
+        try:
+            result["memory"] = stats.mem_benchmark()
+        except Exception as e:
+            result["memory"] = {"error": f"Memory benchmark failed: {str(e)}"}
+    
+    if args.disk:
+        print("Running disk benchmark...")
+        try:
+            result["disk"] = stats.disk_benchmark()
+        except Exception as e:
+            result["disk"] = {"error": f"Disk benchmark failed: {str(e)}"}
+    
+    return result
+
 def get_component_specs(args):
     """Get specs for specific components based on OS and requested components."""
     current_os = platform.system()
@@ -156,6 +224,15 @@ def get_component_specs(args):
                     result["health"] = {"error": "Health score calculation failed"}
             except Exception as e:
                 result["health"] = {"error": f"Health score calculation failed: {str(e)}"}
+        if args.benchmark:
+            try:
+                benchmark_data = get_component_benchmarks(args)
+                if benchmark_data:
+                    result["benchmark"] = benchmark_data
+                else:
+                    result["benchmark"] = {"error": "Benchmark failed"}
+            except Exception as e:
+                result["benchmark"] = {"error": f"Benchmark failed: {str(e)}"}
                 
     else:
         # macOS and Linux return: os_info, cpu_info, mem_info, disk_info
@@ -203,6 +280,15 @@ def get_component_specs(args):
                     result["health"] = {"error": "Health score calculation failed"}
             except Exception as e:
                 result["health"] = {"error": f"Health score calculation failed: {str(e)}"}
+        if args.benchmark:
+            try:
+                benchmark_data = get_component_benchmarks(args)
+                if benchmark_data:
+                    result["benchmark"] = benchmark_data
+                else:
+                    result["benchmark"] = {"error": "Benchmark failed"}
+            except Exception as e:
+                result["benchmark"] = {"error": f"Benchmark failed: {str(e)}"}
     
     return result
 
@@ -265,6 +351,15 @@ def get_component_usage(args):
                     result["health"] = {"error": "Health score calculation failed"}
             except Exception as e:
                 result["health"] = {"error": f"Health score calculation failed: {str(e)}"}
+        if args.benchmark:
+            try:
+                benchmark_data = get_component_benchmarks(args)
+                if benchmark_data:
+                    result["benchmark"] = benchmark_data
+                else:
+                    result["benchmark"] = {"error": "Benchmark failed"}
+            except Exception as e:
+                result["benchmark"] = {"error": f"Benchmark failed: {str(e)}"}
 
     except Exception as e:
         result = {"error": f"Usage data not available on {current_os}: {str(e)}"}
@@ -289,6 +384,7 @@ def main():
     parser.add_argument("--battery", action="store_true", help="Get battery specs/usage")
     parser.add_argument("--temp", action="store_true", help="Get temperature readings")
     parser.add_argument("--health", action="store_true", help="Get system health score")
+    parser.add_argument("--benchmark", action="store_true", help="Run system performance benchmark")
 
     parser.add_argument("--json", action="store_true", help="Output specs/usage as a JSON")
     parser.add_argument("--out", action="store_true", help="Write specs/usage into a JSON file")
@@ -306,11 +402,28 @@ def main():
     args = parser.parse_args()
 
     # Check if any component flags are used
-    component_flags = [args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health]
+    component_flags = [args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]
     any_component_requested = any(component_flags)
 
     # Determine what data to retrieve
-    if args.health and not args.specs and not args.usage and not args.temp and not args.processes:
+    if args.benchmark and not args.specs and not args.usage and not args.temp and not args.processes and not args.health:
+        # Handle standalone benchmark command
+        if any([args.cpu, args.ram, args.disk]):
+            # Run specific component benchmarks
+            print("Starting component benchmarks...")
+            specsOrUsage = get_component_benchmarks(args)
+        else:
+            # Run all benchmarks if no specific components requested
+            print("Starting comprehensive system benchmark...")
+            try:
+                specsOrUsage = {
+                    "cpu": stats.cpu_benchmark(),
+                    "memory": stats.mem_benchmark(),
+                    "disk": stats.disk_benchmark()
+                }
+            except Exception as e:
+                specsOrUsage = {"benchmark": {"error": f"Benchmark failed: {str(e)}"}}
+    elif args.health and not args.specs and not args.usage and not args.temp and not args.processes:
         # Handle standalone health score command
         try:
             specsOrUsage = {"health": stats.system_health_score(cliVersion=True)}
@@ -540,6 +653,9 @@ def main():
                 elif component.lower() == "health":
                     formatted_health = format_health_data(data)
                     print(formatted_health)
+                elif component.lower() == "benchmark":
+                    formatted_benchmark = format_benchmark_data(data)
+                    print(formatted_benchmark)
                 elif isinstance(data, dict):
                     for k, v in data.items():
                         formatted_value = format_value(k, v)

@@ -451,7 +451,7 @@ def _cpu_benchmark():
     time_taken = end_time - start_time
     
     # calculate score (higher is better)
-    baseline_time = 1.5
+    baseline_time = .05
     score = max(0, (baseline_time / time_taken) * 100)
     
     return {
@@ -540,10 +540,9 @@ def _disk_benchmark():
         write_speed = file_size_mb / write_time
         read_speed = file_size_mb / read_time
 
-        # scoring (uncapped, higher is better)
-        # Baseline speeds: 100 MB/s for average HDD performance
-        write_baseline = 100  # MB/s
-        read_baseline = 100   # MB/s
+        # scoring (higher is better)
+        write_baseline = 100
+        read_baseline = 100
         
         write_score = max(0, (write_speed / write_baseline) * 100)
         read_score = max(0, (read_speed / read_baseline) * 100)
