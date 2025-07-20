@@ -1,2 +1,5 @@
-VERSION 1.1.0
-- performance improvements 📈
+Version 2.0.0
+- Add a benchmark (CLI and main module) 🏁
+- Compare against JSON file 🔍
+- CSV exporting 📊
+- Table output in CLI 📋

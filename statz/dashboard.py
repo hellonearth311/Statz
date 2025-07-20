@@ -3,7 +3,7 @@ from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, MofNCompleteColumn
 from time import sleep
 from colorama import Fore, init
-from ._getUsage import _get_usage
+from ._crossPlatform import _get_usage
 import platform
 import psutil
 import time

@@ -43,6 +43,59 @@ def format_gpu_data(gpu_data):
     else:
         return str(gpu_data)
 
+def format_health_data(health_data):
+    """Format health score data for display with colors."""
+    if isinstance(health_data, dict) and "error" in health_data:
+        return f"{Fore.RED}{health_data['error']}{Style.RESET_ALL}"
+    elif isinstance(health_data, dict):
+        formatted_output = []
+        
+        # Format total score with color
+        total_score = health_data.get('total', 0)
+        if total_score >= 90:
+            color = Fore.GREEN
+            rating = "Excellent 🟢"
+        elif total_score >= 75:
+            color = Fore.YELLOW
+            rating = "Good 🟡"
+        elif total_score >= 60:
+            color = Fore.YELLOW
+            rating = "Fair 🟠"
+        elif total_score >= 40:
+            color = Fore.RED
+            rating = "Poor 🔴"
+        else:
+            color = Fore.RED
+            rating = "Critical ⚠️"
+        
+        formatted_output.append(f"  {color}Overall Score: {total_score}/100 ({rating}){Style.RESET_ALL}")
+        formatted_output.append("")
+        formatted_output.append("  Component Breakdown:")
+        
+        # Format individual component scores
+        components = {
+            'cpu': 'CPU',
+            'memory': 'Memory', 
+            'disk': 'Disk',
+            'temperature': 'Temperature',
+            'battery': 'Battery'
+        }
+        
+        for key, label in components.items():
+            if key in health_data:
+                score = health_data[key]
+                if score >= 80:
+                    comp_color = Fore.GREEN
+                elif score >= 60:
+                    comp_color = Fore.YELLOW
+                else:
+                    comp_color = Fore.RED
+                formatted_output.append(f"    {comp_color}{label}: {score}/100{Style.RESET_ALL}")
+        
+        return "\n".join(formatted_output)
+    else:
+        return str(health_data)
+
 def get_component_specs(args):
     """Get specs for specific components based on OS and requested components."""
     current_os = platform.system()
@@ -94,6 +147,15 @@ def get_component_specs(args):
                     result["processes"] = {"error": "Process information not available on this system"}
             except Exception as e:
                 result["processes"] = {"error": f"Process monitoring failed: {str(e)}"}
+        if args.health:
+            try:
+                health_data = stats.system_health_score(cliVersion=True)
+                if health_data:
+                    result["health"] = health_data
+                else:
+                    result["health"] = {"error": "Health score calculation failed"}
+            except Exception as e:
+                result["health"] = {"error": f"Health score calculation failed: {str(e)}"}
                 
     else:
         # macOS and Linux return: os_info, cpu_info, mem_info, disk_info
@@ -132,6 +194,15 @@ def get_component_specs(args):
                     result["processes"] = {"error": "Process information not available on this system"}
             except Exception as e:
                 result["processes"] = {"error": f"Process monitoring failed: {str(e)}"}
+        if args.health:
+            try:
+                health_data = stats.system_health_score(cliVersion=True)
+                if health_data:
+                    result["health"] = health_data
+                else:
+                    result["health"] = {"error": "Health score calculation failed"}
+            except Exception as e:
+                result["health"] = {"error": f"Health score calculation failed: {str(e)}"}
     
     return result
 
@@ -185,6 +256,15 @@ def get_component_usage(args):
                     result["processes"] = {"error": "Process information not available on this system"}
             except Exception as e:
                 result["processes"] = {"error": f"Process monitoring failed: {str(e)}"}
+        if args.health:
+            try:
+                health_data = stats.system_health_score(cliVersion=True)
+                if health_data:
+                    result["health"] = health_data
+                else:
+                    result["health"] = {"error": "Health score calculation failed"}
+            except Exception as e:
+                result["health"] = {"error": f"Health score calculation failed: {str(e)}"}
 
     except Exception as e:
         result = {"error": f"Usage data not available on {current_os}: {str(e)}"}
@@ -208,6 +288,7 @@ def main():
     parser.add_argument("--network", action="store_true", help="Get network specs/usage")
     parser.add_argument("--battery", action="store_true", help="Get battery specs/usage")
     parser.add_argument("--temp", action="store_true", help="Get temperature readings")
+    parser.add_argument("--health", action="store_true", help="Get system health score")
 
     parser.add_argument("--json", action="store_true", help="Output specs/usage as a JSON")
     parser.add_argument("--out", action="store_true", help="Write specs/usage into a JSON file")
@@ -219,14 +300,25 @@ def main():
     # dashboard
     parser.add_argument("--dashboard", action="store_true", help="Create a live dashboard")
 
+    # version
+    parser.add_argument("--version", action="version", version=f"%(prog)s {stats.__version__}", help="Show the version of statz")
+
     args = parser.parse_args()
 
     # Check if any component flags are used
-    component_flags = [args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes]
+    component_flags = [args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health]
     any_component_requested = any(component_flags)
 
     # Determine what data to retrieve
-    if args.temp and not args.specs and not args.usage and not args.processes:
+    if args.health and not args.specs and not args.usage and not args.temp and not args.processes:
+        # Handle standalone health score command
+        try:
+            specsOrUsage = {"health": stats.system_health_score(cliVersion=True)}
+            if not specsOrUsage["health"]:
+                specsOrUsage["health"] = {"error": "Health score calculation failed"}
+        except Exception as e:
+            specsOrUsage = {"health": {"error": f"Health score calculation failed: {str(e)}"}}
+    elif args.temp and not args.specs and not args.usage and not args.processes:
         # Handle standalone temperature command
         try:
             specsOrUsage = {"temperature": stats.get_system_temps()}
@@ -445,6 +537,9 @@ def main():
                 if component.lower() == "gpu":
                     formatted_gpu = format_gpu_data(data)
                     print(formatted_gpu)
+                elif component.lower() == "health":
+                    formatted_health = format_health_data(data)
+                    print(formatted_health)
                 elif isinstance(data, dict):
                     for k, v in data.items():
                         formatted_value = format_value(k, v)

@@ -2,16 +2,18 @@ try:
     from ._getMacInfo import _get_mac_specs, _get_mac_temps
     from ._getWindowsInfo import _get_windows_specs, _get_windows_temps
     from ._getLinuxInfo import _get_linux_specs, _get_linux_temps
-    from ._getUsage import _get_usage, _get_top_n_processes
+    from ._crossPlatform import _get_usage, _get_top_n_processes, _system_health_score
 except ImportError:
     from _getMacInfo import _get_mac_specs, _get_mac_temps
     from _getWindowsInfo import _get_windows_specs, _get_windows_temps
     from _getLinuxInfo import _get_linux_specs, _get_linux_temps
-    from _getUsage import _get_usage, _get_top_n_processes
+    from _crossPlatform import _get_usage, _get_top_n_processes, _system_health_score
 
 import platform
 from datetime import datetime, date
 import json
+
+__version__ = "1.1.1"
 
 def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=True, get_battery=True, **kwargs):
     '''
@@ -175,9 +177,36 @@ def export_into_file(function):
     except Exception as e:
         print(f"Error exporting to file: {e}")
 
+def system_health_score(cliVersion=False):
+    '''
+    Calculate a system health score based on various hardware metrics.
+    
+    This function evaluates the health of the system by calculating scores for CPU, memory, disk,
+    temperature, battery (if available), and network usage. Each metric contributes to a total score
+    that reflects the overall health of the system.
+
+    Args:
+        cliVersion (bool, optional): If True, returns a dictionary with individual scores for each metric.
+                                     If False, returns a single health score. Defaults to False.
+    
+    Returns:
+        float: A health score between 0 and 100, where 100 indicates optimal health.\n
+        OR\n
+        dict: If cliVersion is True, returns a dictionary with individual scores for each metric.\n
+        OR\n
+        exception: If any metric calculation fails.\n
+    
+    Raises:
+        Exception: If any metric calculation fails.
+    '''
+
+    return _system_health_score(cliVersion)
+
 if __name__ == "__main__":
     # print(get_hardware_usage())
     # print(get_system_specs())
     # print(get_system_temps())
     # print(get_top_n_processes())
-    export_into_file(get_hardware_usage)
+    # export_into_file(get_hardware_usage)
+    print(system_health_score())
+    print(system_health_score(cliVersion=True))
