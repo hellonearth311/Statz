@@ -13,7 +13,8 @@
 Works on **macOS**, **Linux**, and **Windows**, and handles OS-specific madness under the hood so you don’t have to.
 
 
-<img src="img/logo.png" alt="drawing" width="200"/>
+<img src="img/logo.png" alt="statz logo" style="border-radius: 15px;" width=200>
+
 
 
 ---
