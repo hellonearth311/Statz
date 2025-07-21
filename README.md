@@ -20,6 +20,12 @@ Works on **macOS**, **Linux**, and **Windows**, and handles OS-specific madness 
 
 - 📊 Get real-time CPU, RAM, and disk usage
 - 💻 Fetch detailed system specifications (CPU, RAM, OS, etc.)
+- 🏁 Run comprehensive performance benchmarks (CPU, memory, disk)
+- 📋 Beautiful table output with Rich formatting
+- 📊 CSV export for all data types (specs, usage, processes, benchmarks)
+- 🏥 System health scoring and monitoring
+- 🌡️ Temperature sensor readings (when available)
+- 📈 Top process monitoring with filtering options
 - 🧠 Automatically handles platform-specific logic
 - 🧼 Super clean API — just a few functions, no fluff
 
@@ -54,6 +60,9 @@ statz --temp
 
 # Get system health score
 statz --health
+
+# Run system performance benchmarks
+statz --benchmark
 
 # Check version
 statz --version
@@ -96,9 +105,15 @@ statz --specs --network    # Network adapter info
 statz --specs --battery    # Battery information
 statz --specs --os         # Operating system info
 
+# Component benchmarks
+statz --benchmark --cpu    # CPU performance benchmark
+statz --benchmark --ram    # Memory performance benchmark
+statz --benchmark --disk   # Disk performance benchmark
+
 # Combine multiple components
 statz --specs --cpu --ram --disk
 statz --usage --cpu --ram --network
+statz --benchmark --cpu --ram --disk
 ```
 
 ### Process Monitoring
@@ -124,7 +139,19 @@ statz --processes --process-count 15 --process-type mem
 statz --specs --json
 statz --usage --cpu --ram --json
 
-# Export to file
+# Table output (formatted tables)
+statz --specs --table
+statz --usage --cpu --ram --table
+statz --processes --table
+statz --benchmark --table
+
+# CSV export
+statz --specs --csv
+statz --usage --csv
+statz --processes --csv
+statz --benchmark --csv
+
+# Export to JSON file
 statz --specs --out
 statz --usage --processes --out
 ```
@@ -138,6 +165,7 @@ statz --usage --processes --out
 | `--processes` | Get top processes information |
 | `--temp` | Get temperature readings |
 | `--health` | Get system health score |
+| `--benchmark` | Run system performance benchmarks |
 | `--dashboard` | Launch live monitoring dashboard |
 | `--version` | Show statz version |
 | `--os` | Operating system information |
@@ -148,6 +176,8 @@ statz --usage --processes --out
 | `--network` | Network adapter information |
 | `--battery` | Battery information |
 | `--json` | Output in JSON format |
+| `--table` | Output in formatted table format |
+| `--csv` | Export to CSV file |
 | `--out` | Export to JSON file |
 | `--process-count N` | Number of processes to show (default: 5) |
 | `--process-type {cpu,mem}` | Sort processes by CPU or memory usage |
@@ -158,14 +188,26 @@ statz --usage --processes --out
 # Get CPU and RAM specs in JSON format
 statz --specs --cpu --ram --json
 
+# Get CPU and RAM specs in table format
+statz --specs --cpu --ram --table
+
 # Monitor top 10 memory-intensive processes
 statz --processes --process-count 10 --process-type mem
 
-# Get all usage data and export to file
-statz --usage --out
+# Export all usage data to CSV
+statz --usage --csv
 
-# Get system temperatures and CPU usage
-statz --temp --usage --cpu
+# Export system specs to JSON file
+statz --specs --out
+
+# Get system temperatures and CPU usage in table format
+statz --temp --usage --cpu --table
+
+# Run comprehensive system benchmark
+statz --benchmark
+
+# Run specific component benchmarks
+statz --benchmark --cpu --ram
 
 # Get complete system overview
 statz --specs --usage --processes --temp
@@ -173,8 +215,11 @@ statz --specs --usage --processes --temp
 # Get system health score
 statz --health
 
-# Check system health with other components
-statz --specs --health --cpu --ram
+# Check system health with other components in table format
+statz --specs --health --cpu --ram --table
+
+# Export benchmark results to CSV
+statz --benchmark --csv
 
 # Launch interactive dashboard for real-time monitoring
 statz --dashboard
@@ -191,14 +236,14 @@ statz --dashboard
 ### Basic System Information
 
 ```python
-import statz
+import statz.stats as stats
 
 # Get complete system specifications
-specs = statz.get_system_specs()
+specs = stats.get_system_specs()
 print(specs)
 
 # Get selective system specifications (improves performance)
-specs = statz.get_system_specs(
+specs = stats.get_system_specs(
     get_os=True,     # Operating system info
     get_cpu=True,    # CPU specifications
     get_gpu=False,   # GPU info (Windows only)
@@ -213,11 +258,11 @@ specs = statz.get_system_specs(
 
 ```python
 # Get all hardware usage data
-usage = statz.get_hardware_usage()
+usage = stats.get_hardware_usage()
 print(usage)
 
 # Get selective usage data (improves performance)
-usage = statz.get_hardware_usage(
+usage = stats.get_hardware_usage(
     get_cpu=True,     # CPU usage per core
     get_ram=True,     # Memory usage stats
     get_disk=True,    # Disk I/O speeds
@@ -230,7 +275,7 @@ usage = statz.get_hardware_usage(
 
 ```python
 # Get system temperature readings
-temps = statz.get_system_temps()
+temps = stats.get_system_temps()
 print(temps)
 
 # Returns platform-specific temperature data:
@@ -243,14 +288,14 @@ print(temps)
 
 ```python
 # Get top 5 processes by CPU usage (default)
-top_processes = statz.get_top_n_processes()
+top_processes = stats.get_top_n_processes()
 print(top_processes)
 
 # Get top 10 processes by CPU usage
-top_cpu = statz.get_top_n_processes(n=10, type="cpu")
+top_cpu = stats.get_top_n_processes(n=10, type="cpu")
 
 # Get top 15 processes by memory usage
-top_memory = statz.get_top_n_processes(n=15, type="mem")
+top_memory = stats.get_top_n_processes(n=15, type="mem")
 
 # Returns: [{"pid": 1234, "name": "chrome", "usage": 15.2}, ...]
 ```
@@ -259,11 +304,11 @@ top_memory = statz.get_top_n_processes(n=15, type="mem")
 
 ```python
 # Get simple health score (0-100)
-health_score = statz.system_health_score()
+health_score = stats.system_health_score()
 print(f"System Health: {health_score}/100")
 
 # Get detailed health breakdown
-health_details = statz.system_health_score(cliVersion=True)
+health_details = stats.system_health_score(cliVersion=True)
 print(health_details)
 # Returns: {
 #   "cpu": 85.2,
@@ -275,44 +320,76 @@ print(health_details)
 # }
 ```
 
+### Performance Benchmarking
+
+```python
+# Run CPU performance benchmark
+cpu_bench = stats.cpu_benchmark()
+print(cpu_bench)
+# Returns: {"execution_time": 0.025, "fibonacci_10000th": "...", "prime_count": 1229, "score": 750.2}
+
+# Run memory performance benchmark
+mem_bench = stats.mem_benchmark()
+print(mem_bench)
+# Returns: {"execution_time": 0.15, "sum_calculated": 999999000000, "score": 666.7}
+
+# Run disk performance benchmark
+disk_bench = stats.disk_benchmark()
+print(disk_bench)
+# Returns: {"write_speed": 450.2, "read_speed": 380.1, "write_score": 450.2, "read_score": 380.1, "overall_score": 415.15}
+```
+
 ### Data Export
 
 ```python
 # Export any function's output to a JSON file
-statz.export_into_file(statz.get_system_specs)
-statz.export_into_file(statz.get_hardware_usage)
-statz.export_into_file(lambda: statz.system_health_score(cliVersion=True))
+stats.export_into_file(stats.get_system_specs)
+stats.export_into_file(stats.get_hardware_usage)
+stats.export_into_file(lambda: stats.system_health_score(cliVersion=True))
 
-# Files are saved as: statz_export_YYYY-MM-DD_HH-MM-SS.json
+# Export to CSV format
+stats.export_into_file(stats.get_system_specs, csv=True)
+stats.export_into_file(stats.get_hardware_usage, csv=True)
+stats.export_into_file(stats.get_top_n_processes, csv=True)
+
+# Files are saved as: statz_export_YYYY-MM-DD_HH-MM-SS.json or .csv
 ```
 
 ### Platform-Specific Notes
 
 ```python
 import platform
+import statz.stats as stats
 
 # Check current platform
 current_os = platform.system()
 
 if current_os == "Windows":
     # Windows supports all features including GPU, network, and battery specs
-    specs = statz.get_system_specs(get_gpu=True, get_network=True, get_battery=True)
+    specs = stats.get_system_specs(get_gpu=True, get_network=True, get_battery=True)
     
 elif current_os in ["Darwin", "Linux"]:  # macOS or Linux
     # macOS/Linux don't support GPU, network, or battery specs
-    specs = statz.get_system_specs(get_gpu=False, get_network=False, get_battery=False)
+    specs = stats.get_system_specs(get_gpu=False, get_network=False, get_battery=False)
 ```
 
 ### Error Handling
 
 ```python
+import statz.stats as stats
+
 try:
     # System information functions
-    specs = statz.get_system_specs()
-    usage = statz.get_hardware_usage()
-    temps = statz.get_system_temps()
-    processes = statz.get_top_n_processes()
-    health = statz.system_health_score()
+    specs = stats.get_system_specs()
+    usage = stats.get_hardware_usage()
+    temps = stats.get_system_temps()
+    processes = stats.get_top_n_processes()
+    health = stats.system_health_score()
+    
+    # Performance benchmarks
+    cpu_bench = stats.cpu_benchmark()
+    mem_bench = stats.mem_benchmark()
+    disk_bench = stats.disk_benchmark()
     
 except OSError as e:
     print(f"Unsupported operating system: {e}")
@@ -323,16 +400,52 @@ except Exception as e:
 
 ## 📝 Changelog
 
-### [v1.2.0 – System Health Score 💓](https://github.com/hellonearth311/Statz/releases/tag/v1.2.0)
-- 🏥 Added system health score functionality
-  - Run `statz --health` in the terminal to get a comprehensive system health assessment
-  - Call `statz.stats.system_health_score()` programmatically to get a numerical health score (0-100)
-  - Use `statz.stats.system_health_score(cliVersion=True)` to get detailed component breakdown
-  - Health score evaluates CPU usage, memory usage, disk usage, temperature, and battery status
-  - Color-coded output with ratings: Excellent 🟢, Good 🟡, Fair 🟠, Poor 🔴, Critical ⚠️
-- 🏷️ Added version flag
-  - Run `statz --version` to check the current version of statz
-  - Displays version information in standard format
+### [v2.0.0 – Major Feature Release](https://github.com/hellonearth311/Statz/releases/tag/v2.0.0)
+- 🏁 Added Performance Benchmarking
+  - New `--benchmark` CLI flag for comprehensive system performance testing
+  - Component-specific benchmarks: `--benchmark --cpu`, `--benchmark --ram`, `--benchmark --disk`
+  - Programmatic access via `statz.cpu_benchmark()`, `statz.mem_benchmark()`, `statz.disk_benchmark()`
+  - Performance scoring system with color-coded ratings (Excellent 🚀, Good 🟢, Fair 🟡, Poor 🔴)
+  - CPU benchmark tests mathematical operations, Fibonacci calculations, and prime number generation
+  - Memory benchmark tests large array operations and memory allocation speed
+  - Disk benchmark measures read/write speeds with temporary file operations
+
+- 📊 CSV Export Functionality
+  - New `--csv` CLI flag for exporting data to CSV format
+  - Support for all data types: specs, usage, processes, health scores, benchmarks, temperatures
+  - Smart CSV formatting with proper headers, units, and user-friendly structure
+  - Hardware usage CSV includes component-wise data with appropriate units (MB, %, MB/s)
+  - System specs CSV organizes data by component type with clear property-value pairs
+  - Programmatic CSV export via `statz.export_into_file(function, csv=True)`
+
+- 📋 Rich Table Output
+  - New `--table` CLI flag for beautiful, formatted table display
+  - Professional table formatting using Rich library with rounded borders
+  - Context-aware labeling (Process, Drive, Module, Interface, etc.)
+  - Color-coded health scores and benchmark ratings in tables
+  - Multi-component table support with organized sections
+  - Special formatting for complex data types (GPU info, process lists, benchmark results)
+
+- 🐞 Major Bug Fixes and Improvements
+  - Fixed misleading RAM process reporting: Now shows absolute memory usage (MB/GB) instead of confusing percentages
+  - Improved process filtering: Excludes system/idle processes, shows only meaningful active processes
+  - Enhanced CPU usage accuracy: Properly caps CPU usage at 100% per process
+  - Better Windows temperature detection: Multiple fallback methods, improved error handling
+  - Enhanced CLI output formatting: Consistent formatting across all commands and data types
+  - Improved error messages: More informative error messages when features aren't available
+
+- 🔧 CLI Enhancements
+  - Better argument parsing and validation
+  - Improved help documentation with clearer descriptions
+  - Enhanced process monitoring with `--process-count` and `--process-type` options
+  - More robust error handling for unsupported features on different platforms
+  - Consistent output formatting across all commands
+
+- 📦 API Improvements
+  - Enhanced `export_into_file()` function with CSV support and parameter passing
+  - Better function documentation and examples
+  - Improved cross-platform compatibility
+  - More reliable temperature sensor detection on Windows systems
 
 ## 📝 Side Note
 If you find any errors on Linux, please report them to me with as much detail as possible as I do not have a Linux machine.
