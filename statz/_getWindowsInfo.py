@@ -188,53 +188,42 @@ try:
         """
         Get Windows temperature using multiple methods for better compatibility
         """
+        # Method 1: Try MSAcpi_ThermalZoneTemperature (most common)
         try:
-            ps_script = """
-            $t = Get-WmiObject MSAcpi_ThermalZoneTemperature -Namespace "root/wmi"
-            if ($t) {
-                $t | ForEach-Object {
-                    $temp = $_.CurrentTemperature / 10 - 273.15
-                    Write-Host "ThermalZone $($_.InstanceName): $temp"
-                }
-            }
-            """
-            
-            process = subprocess.Popen(['powershell.exe', '-Command', ps_script], 
-                                        stdout=subprocess.PIPE, 
-                                        stderr=subprocess.PIPE,
-                                        text=True, 
-                                        creationflags=subprocess.CREATE_NO_WINDOW)
-            
-            stdout, stderr = process.communicate()
-            
-            if process.returncode == 0 and stdout.strip():
+            c = wmi.WMI(namespace="root/wmi")
+            thermal_zones = c.MSAcpi_ThermalZoneTemperature()
+            if thermal_zones:
                 temps = {}
-                for line in stdout.strip().split('\n'):
-                    if 'ThermalZone' in line and ':' in line:
-                        try:
-                            parts = line.split(': ')
-                            if len(parts) == 2:
-                                zone_name = parts[0].strip()
-                                temp = float(parts[1].strip())
-                                temps[zone_name] = temp
-                        except:
-                            continue
+                for zone in thermal_zones:
+                    if hasattr(zone, 'CurrentTemperature') and zone.CurrentTemperature:
+                        # Convert from tenths of Kelvin to Celsius
+                        temp_celsius = (zone.CurrentTemperature / 10.0) - 273.15
+                        # Only include reasonable temperature readings (0-150°C)
+                        if 0 <= temp_celsius <= 150:
+                            zone_name = getattr(zone, 'InstanceName', f'ThermalZone_{len(temps)}')
+                            temps[zone_name] = round(temp_celsius, 1)
                 if temps:
                     return temps
-        except:
-            pass
+        except Exception as e:
+            pass  # Continue to next method
         
+        # Method 2: Try PowerShell with MSAcpi_ThermalZoneTemperature
         try:
             ps_script = """
-            $probes = Get-WmiObject -Class Win32_TemperatureProbe
-            if ($probes) {
-                $probes | ForEach-Object {
-                    if ($_.CurrentReading -ne $null) {
-                        $temp = $_.CurrentReading / 10 - 273.15
-                        Write-Host "TempProbe $($_.Name): $temp"
+            try {
+                $thermal = Get-WmiObject MSAcpi_ThermalZoneTemperature -Namespace "root/wmi" -ErrorAction SilentlyContinue
+                if ($thermal) {
+                    $thermal | ForEach-Object {
+                        if ($_.CurrentTemperature -ne $null -and $_.CurrentTemperature -gt 0) {
+                            $temp = [math]::Round(($_.CurrentTemperature / 10 - 273.15), 1)
+                            if ($temp -ge 0 -and $temp -le 150) {
+                                $name = if ($_.InstanceName) { $_.InstanceName } else { "ThermalZone" }
+                                Write-Output "$name`:$temp"
+                            }
+                        }
                     }
                 }
-            }
+            } catch { }
             """
             
             process = subprocess.Popen(['powershell.exe', '-Command', ps_script], 
@@ -243,71 +232,93 @@ try:
                                         text=True, 
                                         creationflags=subprocess.CREATE_NO_WINDOW)
             
-            stdout, stderr = process.communicate()
+            stdout, stderr = process.communicate(timeout=10)
             
             if process.returncode == 0 and stdout.strip():
                 temps = {}
                 for line in stdout.strip().split('\n'):
-                    if 'TempProbe' in line and ':' in line:
-                        try:
-                            parts = line.split(': ')
-                            if len(parts) == 2:
-                                probe_name = parts[0].strip()
-                                temp = float(parts[1].strip())
-                                temps[probe_name] = temp
-                        except:
-                            continue
-                if temps:
-                    return temps
-        except:
-            pass
-        
-        try:
-            ps_script = """
-            $sensors = Get-WmiObject -Namespace "root/OpenHardwareMonitor" -Class Sensor | Where-Object { $_.SensorType -eq "Temperature" }
-            if ($sensors) {
-                $sensors | ForEach-Object {
-                    Write-Host "$($_.Name): $($_.Value)"
-                }
-            }
-            """
-            
-            process = subprocess.Popen(['powershell.exe', '-Command', ps_script], 
-                                        stdout=subprocess.PIPE, 
-                                        stderr=subprocess.PIPE,
-                                        text=True, 
-                                        creationflags=subprocess.CREATE_NO_WINDOW)
-            
-            stdout, stderr = process.communicate()
-            
-            if process.returncode == 0 and stdout.strip():
-                temps = {}
-                for line in stdout.strip().split('\n'):
+                    line = line.strip()
                     if ':' in line:
                         try:
-                            parts = line.split(': ')
-                            if len(parts) == 2:
-                                sensor_name = parts[0].strip()
-                                temp = float(parts[1].strip())
-                                temps[sensor_name] = temp
-                        except:
+                            name, temp_str = line.split(':', 1)
+                            temp = float(temp_str.strip())
+                            if 0 <= temp <= 150:  # Sanity check
+                                temps[name.strip()] = temp
+                        except (ValueError, IndexError):
                             continue
                 if temps:
                     return temps
-        except:
+        except Exception as e:
             pass
         
+        # Method 3: Try Win32_TemperatureProbe
+        try:
+            c = wmi.WMI()
+            temp_probes = c.Win32_TemperatureProbe()
+            if temp_probes:
+                temps = {}
+                for probe in temp_probes:
+                    if hasattr(probe, 'CurrentReading') and probe.CurrentReading:
+                        # Win32_TemperatureProbe readings are in tenths of Kelvin
+                        temp_celsius = (probe.CurrentReading / 10.0) - 273.15
+                        if 0 <= temp_celsius <= 150:
+                            probe_name = getattr(probe, 'Name', f'TemperatureProbe_{len(temps)}') or f'TemperatureProbe_{len(temps)}'
+                            temps[probe_name] = round(temp_celsius, 1)
+                if temps:
+                    return temps
+        except Exception as e:
+            pass
+        
+        # Method 4: Try OpenHardwareMonitor namespace (if installed)
+        try:
+            c = wmi.WMI(namespace="root/OpenHardwareMonitor")
+            sensors = c.Sensor()
+            temps = {}
+            for sensor in sensors:
+                if (hasattr(sensor, 'SensorType') and sensor.SensorType == 'Temperature' and
+                    hasattr(sensor, 'Value') and sensor.Value is not None):
+                    temp = float(sensor.Value)
+                    if 0 <= temp <= 150:
+                        sensor_name = getattr(sensor, 'Name', f'Sensor_{len(temps)}') or f'Sensor_{len(temps)}'
+                        temps[sensor_name] = round(temp, 1)
+            if temps:
+                return temps
+        except Exception as e:
+            pass
+        
+        # Method 5: Try LibreHardwareMonitor namespace (if installed)
+        try:
+            c = wmi.WMI(namespace="root/LibreHardwareMonitor")
+            sensors = c.Sensor()
+            temps = {}
+            for sensor in sensors:
+                if (hasattr(sensor, 'SensorType') and sensor.SensorType == 'Temperature' and
+                    hasattr(sensor, 'Value') and sensor.Value is not None):
+                    temp = float(sensor.Value)
+                    if 0 <= temp <= 150:
+                        sensor_name = getattr(sensor, 'Name', f'Sensor_{len(temps)}') or f'Sensor_{len(temps)}'
+                        temps[sensor_name] = round(temp, 1)
+            if temps:
+                return temps
+        except Exception as e:
+            pass
+        
+        # Method 6: Fallback - try to get CPU package temperature via PowerShell and typeperf
         try:
             ps_script = """
-            $thermal = Get-WmiObject -Query "SELECT * FROM Win32_PerfRawData_Counters_ThermalZoneInformation"
-            if ($thermal) {
-                $thermal | ForEach-Object {
-                    if ($_.Temperature -ne $null) {
-                        $temp = $_.Temperature / 10 - 273.15
-                        Write-Host "Thermal: $temp"
+            try {
+                $counter = "\\Thermal Zone Information(_Total)\\Temperature"
+                $sample = Get-Counter $counter -MaxSamples 1 -ErrorAction SilentlyContinue
+                if ($sample -and $sample.CounterSamples) {
+                    $temp = $sample.CounterSamples[0].CookedValue
+                    if ($temp -gt 0) {
+                        $temp_celsius = [math]::Round(($temp - 273.15), 1)
+                        if ($temp_celsius -ge 0 -and $temp_celsius -le 150) {
+                            Write-Output "System_Temperature:$temp_celsius"
+                        }
                     }
                 }
-            }
+            } catch { }
             """
             
             process = subprocess.Popen(['powershell.exe', '-Command', ps_script], 
@@ -316,20 +327,24 @@ try:
                                         text=True, 
                                         creationflags=subprocess.CREATE_NO_WINDOW)
             
-            stdout, stderr = process.communicate()
+            stdout, stderr = process.communicate(timeout=10)
             
             if process.returncode == 0 and stdout.strip():
                 for line in stdout.strip().split('\n'):
-                    if 'Thermal:' in line:
+                    line = line.strip()
+                    if ':' in line:
                         try:
-                            temp = float(line.split(': ')[1].strip())
-                            return {'thermal': temp}
-                        except:
+                            name, temp_str = line.split(':', 1)
+                            temp = float(temp_str.strip())
+                            if 0 <= temp <= 150:
+                                return {name.strip(): temp}
+                        except (ValueError, IndexError):
                             continue
-        except:
+        except Exception as e:
             pass
         
-        return None
+        # If all methods fail, return a helpful message instead of None
+        return {"error": "Temperature sensors not available or accessible on this Windows system"}
 
 except:
     def _get_windows_specs():
