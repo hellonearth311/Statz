@@ -1,8 +1,17 @@
 # statz
+![PyPI - Downloads](https://img.shields.io/pypi/dm/statz) 
+![PyPI Version](https://img.shields.io/pypi/v/statz)
+![License](https://img.shields.io/github/license/hellonearth311/statz)
+![GitHub issues](https://img.shields.io/github/issues/hellonearth311/statz)
+![Last Commit](https://img.shields.io/github/last-commit/hellonearth311/statz)
+
+
+
 
 **statz** is a cross-platform Python package that fetches **real-time system usage** and **hardware specs** — all wrapped in a simple, clean API.
 
 Works on **macOS**, **Linux**, and **Windows**, and handles OS-specific madness under the hood so you don’t have to.
+
 
 <img src="img/logo.png" alt="drawing" width="200"/>
 
