@@ -3,10 +3,7 @@
 ![PyPI Version](https://img.shields.io/pypi/v/statz)
 ![License](https://img.shields.io/github/license/hellonearth311/statz)
 ![GitHub issues](https://img.shields.io/github/issues/hellonearth311/statz)
-![Last Commit](https://img.shields.io/github/last-commit/hellonearth311/statz)
-
-
-
+![Last Commit](https://img.shields.io/endpoint?url=https://github-last-commit-badge.vercel.app/lastcommit)
 
 **statz** is a cross-platform Python package that fetches **real-time system usage** and **hardware specs** — all wrapped in a simple, clean API.
 
