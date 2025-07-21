@@ -10,6 +10,57 @@ import platform
 import json
 import argparse
 
+def create_export_function_for_specs(args):
+    """Create a function that can be used with export_into_file for specs data."""
+    if any([args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]):
+        # Component-specific specs
+        def get_specs():
+            return get_component_specs(args)
+        return get_specs
+    else:
+        # All specs
+        return stats.get_system_specs
+
+def create_export_function_for_usage(args):
+    """Create a function that can be used with export_into_file for usage data."""
+    if any([args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]):
+        # Component-specific usage
+        def get_usage():
+            return get_component_usage(args)
+        return get_usage
+    else:
+        # All usage data
+        return stats.get_hardware_usage
+
+def create_export_function_for_processes(args):
+    """Create a function that can be used with export_into_file for process data."""
+    return lambda: stats.get_top_n_processes(args.process_count, args.process_type)
+
+def create_export_function_for_temps():
+    """Create a function that can be used with export_into_file for temperature data."""
+    return stats.get_system_temps
+
+def create_export_function_for_health():
+    """Create a function that can be used with export_into_file for health data."""
+    return lambda: stats.system_health_score(cliVersion=True)
+
+def create_export_function_for_benchmark(args):
+    """Create a function that can be used with export_into_file for benchmark data."""
+    if any([args.cpu, args.ram, args.disk]):
+        # Specific component benchmarks
+        def get_benchmarks():
+            return get_component_benchmarks(args)
+        return get_benchmarks
+    else:
+        # All benchmarks
+        def get_all_benchmarks():
+            return {
+                "cpu": stats.cpu_benchmark(),
+                "memory": stats.mem_benchmark(), 
+                "disk": stats.disk_benchmark()
+            }
+        return get_all_benchmarks
+
 def format_value(key, value):
     """Format value with color if it's an error."""
     if isinstance(value, dict) and "error" in value:
@@ -698,6 +749,7 @@ def main():
 
     parser.add_argument("--json", action="store_true", help="Output specs/usage as a JSON")
     parser.add_argument("--out", action="store_true", help="Write specs/usage into a JSON file")
+    parser.add_argument("--csv", action="store_true", help="Write specs/usage into a CSV file")
     parser.add_argument("--table", action="store_true", help="Output specs/usage as a table")
 
     parser.add_argument("--process-count", type=int, default=5, help="Number of top processes to show (default: 5)")
@@ -882,6 +934,34 @@ def main():
                 f.write(json.dumps(output, indent=2))
 
         print("export complete!")
+    elif args.csv:
+        print("exporting specs/usage into a CSV file...")
+        
+        # Determine which export function to use based on the command
+        if args.benchmark and not args.specs and not args.usage and not args.temp and not args.processes and not args.health:
+            # Standalone benchmark command
+            export_func = create_export_function_for_benchmark(args)
+        elif args.health and not args.specs and not args.usage and not args.temp and not args.processes:
+            # Standalone health command
+            export_func = create_export_function_for_health()
+        elif args.temp and not args.specs and not args.usage and not args.processes:
+            # Standalone temperature command
+            export_func = create_export_function_for_temps()
+        elif args.processes and not args.specs and not args.usage and not args.temp:
+            # Standalone processes command
+            export_func = create_export_function_for_processes(args)
+        elif args.specs:
+            # Specs command
+            export_func = create_export_function_for_specs(args)
+        elif args.usage:
+            # Usage command
+            export_func = create_export_function_for_usage(args)
+        else:
+            # Fallback - create a lambda function that returns the current data
+            export_func = lambda: specsOrUsage
+        
+        # Use the stats export function for CSV
+        stats.export_into_file(export_func, csv=True, params=(False, None))
     elif args.table:
         # Handle table output format
         if isinstance(specsOrUsage, (tuple, list)):
@@ -1040,3 +1120,54 @@ def main():
                 else:
                     formatted_value = format_value("data", data)
                     print(f"  {formatted_value}")
+
+def create_export_function_for_specs(args):
+    """Create a function that can be used with export_into_file for specs data."""
+    if any([args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]):
+        # Component-specific specs
+        def get_specs():
+            return get_component_specs(args)
+        return get_specs
+    else:
+        # All specs
+        return stats.get_system_specs
+
+def create_export_function_for_usage(args):
+    """Create a function that can be used with export_into_file for usage data."""
+    if any([args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]):
+        # Component-specific usage
+        def get_usage():
+            return get_component_usage(args)
+        return get_usage
+    else:
+        # All usage data
+        return stats.get_hardware_usage
+
+def create_export_function_for_processes(args):
+    """Create a function that can be used with export_into_file for process data."""
+    return lambda: stats.get_top_n_processes(args.process_count, args.process_type)
+
+def create_export_function_for_temps():
+    """Create a function that can be used with export_into_file for temperature data."""
+    return stats.get_system_temps
+
+def create_export_function_for_health():
+    """Create a function that can be used with export_into_file for health data."""
+    return lambda: stats.system_health_score(cliVersion=True)
+
+def create_export_function_for_benchmark(args):
+    """Create a function that can be used with export_into_file for benchmark data."""
+    if any([args.cpu, args.ram, args.disk]):
+        # Specific component benchmarks
+        def get_benchmarks():
+            return get_component_benchmarks(args)
+        return get_benchmarks
+    else:
+        # All benchmarks
+        def get_all_benchmarks():
+            return {
+                "cpu": stats.cpu_benchmark(),
+                "memory": stats.mem_benchmark(), 
+                "disk": stats.disk_benchmark()
+            }
+        return get_all_benchmarks
