@@ -387,6 +387,20 @@ def format_table_data(data, title="System Information"):
             elif isinstance(value, list):
                 # Handle lists - show each item in detail
                 if value:  # Check if list is not empty
+                    # Determine appropriate label based on title or data type
+                    if "process" in title.lower():
+                        item_label = "Process"
+                    elif "gpu" in title.lower():
+                        item_label = "GPU"
+                    elif "disk" in title.lower() or "storage" in title.lower():
+                        item_label = "Drive"
+                    elif "memory" in title.lower() or "ram" in title.lower():
+                        item_label = "Module"
+                    elif "network" in title.lower():
+                        item_label = "Interface"
+                    else:
+                        item_label = "Device"
+                    
                     for i, item in enumerate(value):
                         if isinstance(item, dict):
                             # Show each dictionary item as separate rows
@@ -405,13 +419,27 @@ def format_table_data(data, title="System Information"):
                     table.add_row(key, str(value))
     elif isinstance(data, list):
         # Handle case where data itself is a list
+        # Determine appropriate label based on title
+        if "process" in title.lower():
+            item_label = "Process"
+        elif "gpu" in title.lower():
+            item_label = "GPU"
+        elif "disk" in title.lower() or "storage" in title.lower():
+            item_label = "Drive"
+        elif "memory" in title.lower() or "ram" in title.lower():
+            item_label = "Module"
+        elif "network" in title.lower():
+            item_label = "Interface"
+        else:
+            item_label = "Item"
+            
         for i, item in enumerate(data):
             if isinstance(item, dict):
-                table.add_row(f"Device {i+1}", "")  # Header row
+                table.add_row(f"{item_label} {i+1}", "")  # Header row
                 for sub_key, sub_value in item.items():
                     table.add_row(f"  {sub_key}", str(sub_value))
             else:
-                table.add_row(f"Item {i+1}", str(item))
+                table.add_row(f"{item_label} {i+1}", str(item))
     else:
         table.add_row("Data", str(data))
     
@@ -552,15 +580,24 @@ def format_processes_table(process_data):
     table = Table(title="Top Processes", box=box.ROUNDED, title_style="bold cyan")
     table.add_column("PID", style="bold blue")
     table.add_column("Name", style="green")
-    table.add_column("Usage %", style="yellow")
+    table.add_column("Usage", style="yellow")
     
     if isinstance(process_data, list):
         for process in process_data:
             if isinstance(process, dict):
+                usage = process.get('usage', 0)
+                # Check if usage is already formatted (string) or needs formatting (number)
+                if isinstance(usage, str):
+                    # Already formatted (memory usage)
+                    usage_display = usage
+                else:
+                    # Numeric (CPU usage percentage)
+                    usage_display = f"{usage:.1f}%"
+                
                 table.add_row(
                     str(process.get('pid', 'N/A')),
                     process.get('name', 'N/A'),
-                    f"{process.get('usage', 0):.1f}%"
+                    usage_display
                 )
     elif isinstance(process_data, dict) and "error" in process_data:
         table.add_row("Error", f"[red]{process_data['error']}[/red]", "")
@@ -875,8 +912,22 @@ def main():
                             formatted_value = format_value(k, v)
                             print(f"  {k}: {formatted_value}")
                     elif isinstance(category_data, list):
+                        # Determine appropriate label based on category
+                        if "usage" in categories[i].lower():
+                            item_label = "Device"  # For usage data, keep "Device"
+                        elif "memory" in categories[i].lower() or "ram" in categories[i].lower():
+                            item_label = "Module"
+                        elif "disk" in categories[i].lower():
+                            item_label = "Drive"
+                        elif "gpu" in categories[i].lower():
+                            item_label = "GPU"
+                        elif "network" in categories[i].lower():
+                            item_label = "Interface"
+                        else:
+                            item_label = "Device"
+                        
                         for j, item in enumerate(category_data):
-                            print(f"  Device {j+1}: {item}")
+                            print(f"  {item_label} {j+1}: {item}")
                     else:
                         print(f"  {category_data}")
             elif len(specsOrUsage) == 6:
@@ -892,13 +943,25 @@ def main():
                             formatted_value = format_value(k, v)
                             print(f"  {k}: {formatted_value}")
                     elif isinstance(category_data, list):
+                        # Determine appropriate label based on category for Windows format (old)
+                        if "memory" in categories[i].lower() or "ram" in categories[i].lower():
+                            item_label = "Module"
+                        elif "disk" in categories[i].lower():
+                            item_label = "Drive"
+                        elif "gpu" in categories[i].lower():
+                            item_label = "GPU"
+                        elif "network" in categories[i].lower():
+                            item_label = "Interface"
+                        else:
+                            item_label = "Device"
+                        
                         for j, item in enumerate(category_data):
                             if isinstance(item, dict):
-                                print(f"  Device {j+1}:")
+                                print(f"  {item_label} {j+1}:")
                                 for k, v in item.items():
                                     print(f"    {k}: {v}")
                             else:
-                                print(f"  Device {j+1}: {item}")
+                                print(f"  {item_label} {j+1}: {item}")
                     else:
                         print(f"  {category_data}")
             elif len(specsOrUsage) == 7:
@@ -914,13 +977,25 @@ def main():
                             formatted_value = format_value(k, v)
                             print(f"  {k}: {formatted_value}")
                     elif isinstance(category_data, list):
+                        # Determine appropriate label based on category for Windows format (new)
+                        if "memory" in categories[i].lower() or "ram" in categories[i].lower():
+                            item_label = "Module"
+                        elif "disk" in categories[i].lower():
+                            item_label = "Drive"
+                        elif "gpu" in categories[i].lower():
+                            item_label = "GPU"
+                        elif "network" in categories[i].lower():
+                            item_label = "Interface"
+                        else:
+                            item_label = "Device"
+                        
                         for j, item in enumerate(category_data):
                             if isinstance(item, dict):
-                                print(f"  Device {j+1}:")
+                                print(f"  {item_label} {j+1}:")
                                 for k, v in item.items():
                                     print(f"    {k}: {v}")
                             else:
-                                print(f"  Device {j+1}: {item}")
+                                print(f"  {item_label} {j+1}: {item}")
                     else:
                         print(f"  {category_data}")
         else:
@@ -941,13 +1016,27 @@ def main():
                         formatted_value = format_value(k, v)
                         print(f"  {k}: {formatted_value}")
                 elif isinstance(data, list):
+                    # Determine appropriate label based on component type
+                    if component.lower() == "processes":
+                        item_label = "Process"
+                    elif component.lower() == "gpu":
+                        item_label = "GPU"
+                    elif component.lower() in ["disk", "storage"]:
+                        item_label = "Drive"
+                    elif component.lower() in ["memory", "ram"]:
+                        item_label = "Module"
+                    elif component.lower() == "network":
+                        item_label = "Interface"
+                    else:
+                        item_label = "Device"
+                    
                     for j, item in enumerate(data):
                         if isinstance(item, dict):
-                            print(f"  Device {j+1}:")
+                            print(f"  {item_label} {j+1}:")
                             for k, v in item.items():
                                 print(f"    {k}: {v}")
                         else:
-                            print(f"  Device {j+1}: {item}")
+                            print(f"  {item_label} {j+1}: {item}")
                 else:
                     formatted_value = format_value("data", data)
                     print(f"  {formatted_value}")

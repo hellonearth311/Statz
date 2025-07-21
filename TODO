@@ -2,5 +2,9 @@ Version 2.0.0
 - Add a benchmark (CLI and main module) 🏁 ✅
 - Compare against JSON file 🔍
 - CSV exporting 📊
-- Table output in CLI 📋
-- Fix broken top processes (again ughhh)
+- Table output in CLI 📋✅
+- Bug squashing (CLI formatting errors, broken top processes) 🐞✅
+
+Version 2.1.0
+- split it up into different modules (eg stats [contains usage, specs, top processes], temp, benchmark, health) ✂️
+- top process monitoring in dashboard 🕛
