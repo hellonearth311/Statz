@@ -1,5 +1,6 @@
 Version 2.0.0
-- Add a benchmark (CLI and main module) 🏁
+- Add a benchmark (CLI and main module) 🏁 ✅
 - Compare against JSON file 🔍
 - CSV exporting 📊
 - Table output in CLI 📋
+- Fix broken top processes (again ughhh)

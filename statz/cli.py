@@ -2,6 +2,9 @@ from statz import stats
 from datetime import date, datetime
 from colorama import Fore, Style, init
 from .dashboard import run_dashboard
+from rich.console import Console
+from rich.table import Table
+from rich import box
 
 import platform
 import json
@@ -299,31 +302,29 @@ def get_component_usage(args):
     # Get all usage data first
     try:
         all_usage = stats.get_hardware_usage(
-            get_os=args.os,
             get_cpu=args.cpu,
-            get_gpu=args.gpu,
             get_ram=args.ram,
             get_disk=args.disk,
             get_network=args.network,
             get_battery=args.battery
         )
-        # Returns: os_usage, cpu_usage, gpu_usage, ram_usage, disk_usages, network_usage, battery_usage
+        # Returns: [cpu_usage, ram_usage, disk_usages, network_usage, battery_usage]
         result = {}
 
         if args.os:
             result["os"] = {"system": current_os, "platform": platform.platform()}
         if args.cpu:
-            result["cpu"] = all_usage[1]
+            result["cpu"] = all_usage[0]
         if args.gpu:
-            result["gpu"] = all_usage[2]
+            result["gpu"] = {"error": "GPU usage not available - only specs are supported"}
         if args.ram:
-            result["ram"] = all_usage[3]
+            result["ram"] = all_usage[1]
         if args.disk:
-            result["disk"] = all_usage[4]
+            result["disk"] = all_usage[2]
         if args.network:
-            result["network"] = all_usage[5]
+            result["network"] = all_usage[3]
         if args.battery:
-            result["battery"] = all_usage[6]
+            result["battery"] = all_usage[4]
         if args.temp:
             try:
                 temp_data = stats.get_system_temps()
@@ -366,6 +367,278 @@ def get_component_usage(args):
 
     return result
 
+def format_table_data(data, title="System Information"):
+    """Format data into a Rich table for display."""
+    console = Console()
+    table = Table(title=title, box=box.ROUNDED, title_style="bold cyan")
+    table.add_column("Property", style="bold blue", no_wrap=True)
+    table.add_column("Value", style="green")
+    
+    if isinstance(data, dict):
+        for key, value in data.items():
+            if isinstance(value, dict):
+                # Handle nested dictionaries (like error messages)
+                if "error" in value:
+                    table.add_row(key, f"[red]{value['error']}[/red]")
+                else:
+                    # Flatten nested dict
+                    for sub_key, sub_value in value.items():
+                        table.add_row(f"{key} - {sub_key}", str(sub_value))
+            elif isinstance(value, list):
+                # Handle lists - show each item in detail
+                if value:  # Check if list is not empty
+                    for i, item in enumerate(value):
+                        if isinstance(item, dict):
+                            # Show each dictionary item as separate rows
+                            table.add_row(f"{key} {i+1}", "")  # Header row
+                            for sub_key, sub_value in item.items():
+                                table.add_row(f"  {sub_key}", str(sub_value))
+                        else:
+                            table.add_row(f"{key} {i+1}", str(item))
+                else:
+                    table.add_row(key, "[yellow]No data available[/yellow]")
+            else:
+                # Handle simple values
+                if "error" in str(value).lower():
+                    table.add_row(key, f"[red]{value}[/red]")
+                else:
+                    table.add_row(key, str(value))
+    elif isinstance(data, list):
+        # Handle case where data itself is a list
+        for i, item in enumerate(data):
+            if isinstance(item, dict):
+                table.add_row(f"Device {i+1}", "")  # Header row
+                for sub_key, sub_value in item.items():
+                    table.add_row(f"  {sub_key}", str(sub_value))
+            else:
+                table.add_row(f"Item {i+1}", str(item))
+    else:
+        table.add_row("Data", str(data))
+    
+    return table
+
+def format_component_tables(component_data):
+    """Format component-specific data into multiple tables."""
+    console = Console()
+    
+    for component, data in component_data.items():
+        title = f"{component.upper()} Information"
+        
+        # Handle special cases
+        if component.lower() == "health":
+            table = format_health_table(data)
+        elif component.lower() in ["cpu", "memory", "disk"] and isinstance(data, dict) and "score" in data:
+            # This is benchmark data for a specific component
+            benchmark_data = {component: data}
+            table = format_benchmark_table(benchmark_data)
+        elif component.lower() == "benchmark":
+            table = format_benchmark_table(data)
+        elif component.lower() == "processes":
+            table = format_processes_table(data)
+        elif component.lower() == "gpu" and isinstance(data, list):
+            table = format_gpu_table(data)
+        else:
+            table = format_table_data(data, title)
+        
+        console.print(table)
+        console.print()  # Add spacing between tables
+
+def format_health_table(health_data):
+    """Format health score data into a table."""
+    table = Table(title="System Health Score", box=box.ROUNDED, title_style="bold cyan")
+    table.add_column("Component", style="bold blue", no_wrap=True)
+    table.add_column("Score", style="green")
+    table.add_column("Status", style="yellow")
+    
+    if isinstance(health_data, dict):
+        if "error" in health_data:
+            table.add_row("Error", f"[red]{health_data['error']}[/red]", "")
+        else:
+            for component, score in health_data.items():
+                if component != "overall_score":
+                    # Color code the score
+                    if score >= 85:
+                        color = "green"
+                        status = "Excellent 🚀"
+                    elif score >= 70:
+                        color = "green"
+                        status = "Good 🟢"
+                    elif score >= 55:
+                        color = "yellow"
+                        status = "Fair 🟡"
+                    else:
+                        color = "red"
+                        status = "Poor 🔴"
+                    
+                    table.add_row(component.replace('_', ' ').title(), f"[{color}]{score}[/{color}]", status)
+            
+            # Add overall score if present
+            if "overall_score" in health_data:
+                overall = health_data["overall_score"]
+                if overall >= 85:
+                    color = "green"
+                    status = "Excellent 🚀"
+                elif overall >= 70:
+                    color = "green"
+                    status = "Good 🟢"
+                elif overall >= 55:
+                    color = "yellow"
+                    status = "Fair 🟡"
+                else:
+                    color = "red"
+                    status = "Poor 🔴"
+                
+                table.add_row("[bold]Overall Score[/bold]", f"[{color}]{overall}[/{color}]", f"[bold]{status}[/bold]")
+    
+    return table
+
+def format_benchmark_table(benchmark_data):
+    """Format benchmark data into a table."""
+    table = Table(title="System Benchmark Results", box=box.ROUNDED, title_style="bold cyan")
+    table.add_column("Component", style="bold blue", no_wrap=True)
+    table.add_column("Metric", style="blue")
+    table.add_column("Value", style="green")
+    table.add_column("Rating", style="yellow")
+    
+    if isinstance(benchmark_data, dict):
+        if "error" in benchmark_data:
+            table.add_row("Error", "", f"[red]{benchmark_data['error']}[/red]", "")
+        else:
+            for component, data in benchmark_data.items():
+                if isinstance(data, dict):
+                    if "error" in data:
+                        table.add_row(component.upper(), "Error", f"[red]{data['error']}[/red]", "")
+                    else:
+                        first_row = True
+                        for metric, value in data.items():
+                            if metric == 'score':
+                                # Color code scores
+                                score = value
+                                if score >= 200:
+                                    color = "green"
+                                    rating = "Excellent 🚀"
+                                elif score >= 150:
+                                    color = "green"
+                                    rating = "Very Good 🟢"
+                                elif score >= 100:
+                                    color = "yellow"
+                                    rating = "Good 🟡"
+                                elif score >= 75:
+                                    color = "yellow"
+                                    rating = "Fair 🟠"
+                                else:
+                                    color = "red"
+                                    rating = "Poor 🔴"
+                                
+                                table.add_row(
+                                    component.upper() if first_row else "",
+                                    metric.replace('_', ' ').title(),
+                                    f"[{color}]{value}[/{color}]",
+                                    rating
+                                )
+                            else:
+                                table.add_row(
+                                    component.upper() if first_row else "",
+                                    metric.replace('_', ' ').title(),
+                                    str(value),
+                                    ""
+                                )
+                            first_row = False
+    
+    return table
+
+def format_processes_table(process_data):
+    """Format process data into a table."""
+    table = Table(title="Top Processes", box=box.ROUNDED, title_style="bold cyan")
+    table.add_column("PID", style="bold blue")
+    table.add_column("Name", style="green")
+    table.add_column("Usage %", style="yellow")
+    
+    if isinstance(process_data, list):
+        for process in process_data:
+            if isinstance(process, dict):
+                table.add_row(
+                    str(process.get('pid', 'N/A')),
+                    process.get('name', 'N/A'),
+                    f"{process.get('usage', 0):.1f}%"
+                )
+    elif isinstance(process_data, dict) and "error" in process_data:
+        table.add_row("Error", f"[red]{process_data['error']}[/red]", "")
+    
+    return table
+
+def format_gpu_table(gpu_data):
+    """Format GPU data into a table."""
+    table = Table(title="GPU Information", box=box.ROUNDED, title_style="bold cyan")
+    table.add_column("GPU", style="bold blue")
+    table.add_column("Property", style="blue")
+    table.add_column("Value", style="green")
+    
+    if isinstance(gpu_data, list):
+        for i, gpu in enumerate(gpu_data):
+            if isinstance(gpu, dict):
+                first_row = True
+                for key, value in gpu.items():
+                    table.add_row(
+                        f"GPU {i+1}" if first_row else "",
+                        key.replace('_', ' ').title(),
+                        str(value)
+                    )
+                    first_row = False
+    elif isinstance(gpu_data, dict):
+        if "error" in gpu_data:
+            table.add_row("Error", "", f"[red]{gpu_data['error']}[/red]")
+        else:
+            for key, value in gpu_data.items():
+                table.add_row("GPU 1", key.replace('_', ' ').title(), str(value))
+    
+    return table
+
+def format_full_system_table(specs_data):
+    """Format full system specs into organized tables."""
+    console = Console()
+    
+    if isinstance(specs_data, (tuple, list)):
+        if len(specs_data) == 4:
+            # macOS/Linux format
+            categories = [
+                ("OS Information", specs_data[0]),
+                ("CPU Information", specs_data[1]), 
+                ("Memory Information", specs_data[2]),
+                ("Disk Information", specs_data[3])
+            ]
+        elif len(specs_data) == 5:
+            # Usage format
+            categories = [
+                ("CPU Usage", specs_data[0]),
+                ("Memory Usage", specs_data[1]),
+                ("Disk Usage", specs_data[2]),
+                ("Network Usage", specs_data[3]),
+                ("Battery Usage", specs_data[4])
+            ]
+        elif len(specs_data) == 7:
+            # Windows format (new with OS info)
+            categories = [
+                ("OS Information", specs_data[0]),
+                ("CPU Information", specs_data[1]),
+                ("GPU Information", specs_data[2]),
+                ("Memory Information", specs_data[3]),
+                ("Disk Information", specs_data[4]),
+                ("Network Information", specs_data[5]),
+                ("Battery Information", specs_data[6])
+            ]
+        else:
+            # Fallback
+            categories = [(f"Category {i+1}", data) for i, data in enumerate(specs_data)]
+        
+        for title, data in categories:
+            if title == "GPU Information" and isinstance(data, list):
+                table = format_gpu_table(data)
+            else:
+                table = format_table_data(data, title)
+            console.print(table)
+            console.print()  # Add spacing between tables
+
 def main():
     # Initialize colorama
     init()
@@ -388,15 +661,13 @@ def main():
 
     parser.add_argument("--json", action="store_true", help="Output specs/usage as a JSON")
     parser.add_argument("--out", action="store_true", help="Write specs/usage into a JSON file")
-    
-    # Process monitoring options
+    parser.add_argument("--table", action="store_true", help="Output specs/usage as a table")
+
     parser.add_argument("--process-count", type=int, default=5, help="Number of top processes to show (default: 5)")
     parser.add_argument("--process-type", choices=["cpu", "mem"], default="cpu", help="Sort processes by CPU or memory usage (default: cpu)")
 
-    # dashboard
     parser.add_argument("--dashboard", action="store_true", help="Create a live dashboard")
 
-    # version
     parser.add_argument("--version", action="version", version=f"%(prog)s {stats.__version__}", help="Show the version of statz")
 
     args = parser.parse_args()
@@ -574,6 +845,15 @@ def main():
                 f.write(json.dumps(output, indent=2))
 
         print("export complete!")
+    elif args.table:
+        # Handle table output format
+        if isinstance(specsOrUsage, (tuple, list)):
+            # Handle tuple/list format (full system specs)
+            format_full_system_table(specsOrUsage)
+        else:
+            # Handle dictionary format (component-specific data)
+            format_component_tables(specsOrUsage)
+
     else:
         if isinstance(specsOrUsage, tuple):
             # Handle tuple format (full system specs)
