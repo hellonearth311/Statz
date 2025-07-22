@@ -1,4 +1,7 @@
 from statz import stats
+from statz.benchmark import cpu_benchmark, mem_benchmark, disk_benchmark
+from statz.temp import get_system_temps
+from statz.health import system_health_score
 from datetime import date, datetime
 from colorama import Fore, Style, init
 from .dashboard import run_dashboard
@@ -38,11 +41,11 @@ def create_export_function_for_processes(args):
 
 def create_export_function_for_temps():
     """Create a function that can be used with export_into_file for temperature data."""
-    return stats.get_system_temps
+    return get_system_temps
 
 def create_export_function_for_health():
     """Create a function that can be used with export_into_file for health data."""
-    return lambda: stats.system_health_score(cliVersion=True)
+    return lambda: system_health_score(cliVersion=True)
 
 def create_export_function_for_benchmark(args):
     """Create a function that can be used with export_into_file for benchmark data."""
@@ -55,9 +58,9 @@ def create_export_function_for_benchmark(args):
         # All benchmarks
         def get_all_benchmarks():
             return {
-                "cpu": stats.cpu_benchmark(),
-                "memory": stats.mem_benchmark(), 
-                "disk": stats.disk_benchmark()
+                "cpu": cpu_benchmark(),
+                "memory": mem_benchmark(),
+                "disk": disk_benchmark()
             }
         return get_all_benchmarks
 
@@ -198,21 +201,21 @@ def get_component_benchmarks(args):
     if args.cpu:
         print("Running CPU benchmark...")
         try:
-            result["cpu"] = stats.cpu_benchmark()
+            result["cpu"] = cpu_benchmark()
         except Exception as e:
             result["cpu"] = {"error": f"CPU benchmark failed: {str(e)}"}
     
     if args.ram:
         print("Running memory benchmark...")
         try:
-            result["memory"] = stats.mem_benchmark()
+            result["memory"] = mem_benchmark()
         except Exception as e:
             result["memory"] = {"error": f"Memory benchmark failed: {str(e)}"}
     
     if args.disk:
         print("Running disk benchmark...")
         try:
-            result["disk"] = stats.disk_benchmark()
+            result["disk"] = disk_benchmark()
         except Exception as e:
             result["disk"] = {"error": f"Disk benchmark failed: {str(e)}"}
     
@@ -253,7 +256,7 @@ def get_component_specs(args):
                 result["battery"] = {"error": "Battery information not available on this system"}
         if args.temp:
             try:
-                temp_data = stats.get_system_temps()
+                temp_data = get_system_temps()
                 if temp_data:
                     result["temperature"] = temp_data
                 else:
@@ -271,7 +274,7 @@ def get_component_specs(args):
                 result["processes"] = {"error": f"Process monitoring failed: {str(e)}"}
         if args.health:
             try:
-                health_data = stats.system_health_score(cliVersion=True)
+                health_data = system_health_score(cliVersion=True)
                 if health_data:
                     result["health"] = health_data
                 else:
@@ -309,7 +312,7 @@ def get_component_specs(args):
             result["battery"] = {"error": f"Battery specs not available on {current_os}"}
         if args.temp:
             try:
-                temp_data = stats.get_system_temps()
+                temp_data = get_system_temps()
                 if temp_data:
                     result["temperature"] = temp_data
                 else:
@@ -327,7 +330,7 @@ def get_component_specs(args):
                 result["processes"] = {"error": f"Process monitoring failed: {str(e)}"}
         if args.health:
             try:
-                health_data = stats.system_health_score(cliVersion=True)
+                health_data = system_health_score(cliVersion=True)
                 if health_data:
                     result["health"] = health_data
                 else:
@@ -378,7 +381,7 @@ def get_component_usage(args):
             result["battery"] = all_usage[4]
         if args.temp:
             try:
-                temp_data = stats.get_system_temps()
+                temp_data = get_system_temps()
                 if temp_data:
                     result["temperature"] = temp_data
                 else:
@@ -396,7 +399,7 @@ def get_component_usage(args):
                 result["processes"] = {"error": f"Process monitoring failed: {str(e)}"}
         if args.health:
             try:
-                health_data = stats.system_health_score(cliVersion=True)
+                health_data = system_health_score(cliVersion=True)
                 if health_data:
                     result["health"] = health_data
                 else:
@@ -972,7 +975,7 @@ def main():
             format_component_tables(specsOrUsage)
 
     else:
-        if isinstance(specsOrUsage, tuple):
+        if isinstance(specsOrUsage, (tuple, list)):
             # Handle tuple format (full system specs)
             if len(specsOrUsage) == 4:
                 # macOS/Linux format
@@ -1078,7 +1081,7 @@ def main():
                                 print(f"  {item_label} {j+1}: {item}")
                     else:
                         print(f"  {category_data}")
-        else:
+        elif isinstance(specsOrUsage, dict):
             # Handle dictionary format (component-specific data)
             for component, data in specsOrUsage.items():
                 print(f"\n{component.upper()} Info:")
@@ -1120,6 +1123,16 @@ def main():
                 else:
                     formatted_value = format_value("data", data)
                     print(f"  {formatted_value}")
+        else:
+            # Handle other data types (fallback)
+            print("System Information:")
+            if hasattr(specsOrUsage, '__iter__') and not isinstance(specsOrUsage, (str, dict)):
+                # Handle other iterable types like lists
+                for i, item in enumerate(specsOrUsage):
+                    print(f"  Item {i+1}: {item}")
+            else:
+                # Handle single values or unknown types
+                print(f"  {specsOrUsage}")
 
 def create_export_function_for_specs(args):
     """Create a function that can be used with export_into_file for specs data."""
