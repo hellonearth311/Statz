@@ -1,22 +1,23 @@
 Version 2.1.0
-- top process monitoring in dashboard 🕛
-- Compare against JSON file 🔍
-- put internal files inside an internal folder so it's harder to access them
-- fix broken CLI for statz --specs and statz --usage with no other args
+- 🕛 Top process monitoring in dashboard
+- 🔍 Compare against JSON file
+- 🔒 Put internal files inside an internal folder so it's harder to access them ✅
+- 🛠️ Fix broken CLI for statz --specs and statz --usage with no other args and benchmarks ✅
+- 🐛 Fix bad error handling for functions
 
 Version 2.2.0
-- internet speed test (ping and down/up speed)
-- upload data to cloud
+- 🌐 Internet speed test (ping and down/up speed)
+- ☁️ Upload data to cloud
 
 Version 2.3.0
-- get gpu usage on windows by writing a C script
-- connected devices monitoring (connect an arduino or FPGA to monitor it)
+- 🎮 Get GPU usage on Windows by writing a C script
+- 🔌 Connected devices monitoring (connect an Arduino or FPGA to monitor it)
 
 Version 3.0.0
-- Predict system failure with AI / ML
-- Flag suspicous processes with AI / ML
-- Suggest hardware upgrades with AI / ML
+- 🤖 Predict system failure with AI / ML
+- 🚩 Flag suspicious processes with AI / ML
+- 🛠️ Suggest hardware upgrades with AI / ML
 
 Version 3.1.0
-- Detect malicous processes with AI / ML
-- Create custom benchmarks with AI / ML
+- 🛡️ Detect malicious processes with AI / ML
+- 🏋️ Create custom benchmarks with AI / ML

@@ -157,90 +157,93 @@ def _get_usage(get_cpu, get_ram, get_disk, get_network, get_battery):
 
 def _get_top_n_processes(n=5, type="cpu"):
     try:
-        int(n)
-    except:
-        raise TypeError(f"n must be int, not {type(n)}")
-    
-    # First, initialize CPU monitoring for all processes
-    if type == "cpu":
-        for proc in psutil.process_iter():
+        try:
+            int(n)
+        except:
+            raise TypeError(f"n must be int, not {type(n)}")
+        
+        # First, initialize CPU monitoring for all processes
+        if type == "cpu":
+            for proc in psutil.process_iter():
+                try:
+                    proc.cpu_percent()  # Initialize CPU monitoring
+                except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
+                    pass
+            # Wait a bit for accurate CPU readings
+            time.sleep(0.1)
+        
+        processes = []
+        # List of process names to exclude (system processes that report incorrect usage)
+        excluded_processes = {
+            'System Idle Process',
+            'Idle',
+            'idle',
+            'System',  # Sometimes the main System process also reports weird values
+        }
+        
+        for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent', 'memory_info']):
             try:
-                proc.cpu_percent()  # Initialize CPU monitoring
+                proc_info = proc.info
+                
+                # Skip excluded system processes
+                if proc_info['name'] in excluded_processes:
+                    continue
+                    
+                # Skip processes with PID 0 (usually system idle)
+                if proc_info['pid'] == 0:
+                    continue
+                
+                # Filter out processes with None values and very low usage
+                if type == "cpu" and proc_info['cpu_percent'] is not None and proc_info['cpu_percent'] > 0:
+                    # Cap CPU usage at reasonable levels (no single process should use more than 100% per core)
+                    cpu_percent = min(proc_info['cpu_percent'], 100.0)
+                    if cpu_percent > 0.1:  # Only include processes using more than 0.1% CPU
+                        proc_info['cpu_percent'] = cpu_percent
+                        processes.append(proc_info)
+                elif type == "mem" and proc_info['memory_percent'] is not None and proc_info['memory_percent'] > 0:
+                    # Add absolute memory usage in MB for better reporting
+                    if proc_info['memory_info'] is not None:
+                        memory_mb = proc_info['memory_info'].rss / 1024 / 1024  # Convert bytes to MB
+                        proc_info['memory_mb'] = memory_mb
+                        # Only include processes using at least 1MB of RAM
+                        if memory_mb >= 1.0:
+                            processes.append(proc_info)
             except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
                 pass
-        # Wait a bit for accurate CPU readings
-        time.sleep(0.1)
-    
-    processes = []
-    # List of process names to exclude (system processes that report incorrect usage)
-    excluded_processes = {
-        'System Idle Process',
-        'Idle',
-        'idle',
-        'System',  # Sometimes the main System process also reports weird values
-    }
-    
-    for proc in psutil.process_iter(['pid', 'name', 'cpu_percent', 'memory_percent', 'memory_info']):
-        try:
-            proc_info = proc.info
-            
-            # Skip excluded system processes
-            if proc_info['name'] in excluded_processes:
-                continue
+        
+        if type == "cpu":
+            top_processes = sorted(processes, key=lambda p: p['cpu_percent'] or 0, reverse=True)[:n]
+            top_processes_list = []
+            for p in top_processes:
+                top_processes_list.append({
+                    'pid': p['pid'],
+                    'name': p['name'],
+                    'usage': round(float(p['cpu_percent'] or 0), 2)
+                })
+            return top_processes_list
+        elif type == "mem":
+            # Sort by absolute memory usage (MB) for more meaningful results
+            top_processes = sorted(processes, key=lambda p: p.get('memory_mb', 0), reverse=True)[:n]
+            top_processes_list = []
+            for p in top_processes:
+                memory_mb = p.get('memory_mb', 0)
+                # Format memory usage for display
+                if memory_mb >= 1024:  # If >= 1GB, show in GB
+                    usage_display = f"{memory_mb / 1024:.1f} GB"
+                else:  # Show in MB
+                    usage_display = f"{memory_mb:.0f} MB"
                 
-            # Skip processes with PID 0 (usually system idle)
-            if proc_info['pid'] == 0:
-                continue
-            
-            # Filter out processes with None values and very low usage
-            if type == "cpu" and proc_info['cpu_percent'] is not None and proc_info['cpu_percent'] > 0:
-                # Cap CPU usage at reasonable levels (no single process should use more than 100% per core)
-                cpu_percent = min(proc_info['cpu_percent'], 100.0)
-                if cpu_percent > 0.1:  # Only include processes using more than 0.1% CPU
-                    proc_info['cpu_percent'] = cpu_percent
-                    processes.append(proc_info)
-            elif type == "mem" and proc_info['memory_percent'] is not None and proc_info['memory_percent'] > 0:
-                # Add absolute memory usage in MB for better reporting
-                if proc_info['memory_info'] is not None:
-                    memory_mb = proc_info['memory_info'].rss / 1024 / 1024  # Convert bytes to MB
-                    proc_info['memory_mb'] = memory_mb
-                    # Only include processes using at least 1MB of RAM
-                    if memory_mb >= 1.0:
-                        processes.append(proc_info)
-        except (psutil.NoSuchProcess, psutil.AccessDenied, psutil.ZombieProcess):
-            pass
-    
-    if type == "cpu":
-        top_processes = sorted(processes, key=lambda p: p['cpu_percent'] or 0, reverse=True)[:n]
-        top_processes_list = []
-        for p in top_processes:
-            top_processes_list.append({
-                'pid': p['pid'],
-                'name': p['name'],
-                'usage': round(float(p['cpu_percent'] or 0), 2)
-            })
-        return top_processes_list
-    elif type == "mem":
-        # Sort by absolute memory usage (MB) for more meaningful results
-        top_processes = sorted(processes, key=lambda p: p.get('memory_mb', 0), reverse=True)[:n]
-        top_processes_list = []
-        for p in top_processes:
-            memory_mb = p.get('memory_mb', 0)
-            # Format memory usage for display
-            if memory_mb >= 1024:  # If >= 1GB, show in GB
-                usage_display = f"{memory_mb / 1024:.1f} GB"
-            else:  # Show in MB
-                usage_display = f"{memory_mb:.0f} MB"
-            
-            top_processes_list.append({
-                'pid': p['pid'],
-                'name': p['name'],
-                'usage': usage_display
-                # Note: Removed usage_mb and usage_percent for cleaner output
-            })
-        return top_processes_list
-    else:
-        raise TypeError(f"Type must be cpu or mem, not {type}")
+                top_processes_list.append({
+                    'pid': p['pid'],
+                    'name': p['name'],
+                    'usage': usage_display
+                    # Note: Removed usage_mb and usage_percent for cleaner output
+                })
+            return top_processes_list
+        else:
+            raise TypeError(f"Type must be cpu or mem, not {type}")
+    except Exception as e:
+        return {"error": str(e)}
 
 def _cpu_health_score(cpu_usage_dict):
     """

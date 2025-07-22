@@ -1,6 +1,7 @@
 .venv
 dist
 src
-statz/__pycache__
+*/__pycache__/
+__pycache__/
 statz.egg-info
 statz_export_*.*
