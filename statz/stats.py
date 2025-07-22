@@ -1,13 +1,11 @@
-try:
-    from ._getMacInfo import _get_mac_specs, _get_mac_temps
-    from ._getWindowsInfo import _get_windows_specs, _get_windows_temps
-    from ._getLinuxInfo import _get_linux_specs, _get_linux_temps
-    from ._crossPlatform import _get_usage, _get_top_n_processes, _system_health_score, _cpu_benchmark, _mem_benchmark, _disk_benchmark
-except ImportError:
-    from _getMacInfo import _get_mac_specs, _get_mac_temps
-    from _getWindowsInfo import _get_windows_specs, _get_windows_temps
-    from _getLinuxInfo import _get_linux_specs, _get_linux_temps
-    from _crossPlatform import _get_usage, _get_top_n_processes, _system_health_score, _cpu_benchmark, _mem_benchmark, _disk_benchmark
+'''System monitoring and statistics module for cross-platform systems.
+This module provides a unified interface to retrieve hardware usage, system specifications,
+top processes, and export data to files in JSON or CSV format.'''
+
+from ._getMacInfo import _get_mac_specs
+from ._getWindowsInfo import _get_windows_specs
+from ._getLinuxInfo import _get_linux_specs
+from ._crossPlatform import _get_usage, _get_top_n_processes
 
 import platform
 from datetime import datetime, date
@@ -82,44 +80,6 @@ def get_system_specs(get_os=True, get_cpu=True, get_gpu=True, get_ram=True, get_
         return _get_windows_specs(get_os, get_cpu, get_gpu, get_ram, get_disk, get_network, get_battery)
     else:
         raise OSError("Unsupported operating system")
-
-def get_system_temps():
-    '''
-    Get temperature readings from system sensors across all platforms.
-    
-    This function provides cross-platform temperature monitoring by detecting the operating system
-    and calling the appropriate platform-specific temperature reading function.
-    
-    Returns:
-        dict or None: Temperature data structure varies by platform:
-        
-        **macOS**: Dictionary with sensor names as keys and temperatures in Celsius as values
-        Example: {"CPU": 45.2, "GPU": 38.5, "Battery": 32.1}
-        
-        **Linux**: Dictionary with sensor names as keys and temperatures in Celsius as values
-        Example: {"coretemp-isa-0000": 42.0, "acpi-0": 35.5}
-        
-        **Windows**: Dictionary with thermal zone names as keys and temperatures in Celsius as values
-        Example: {"ThermalZone _TZ.TZ00": 41.3, "ThermalZone _TZ.TZ01": 38.9}
-        
-        Returns None if temperature sensors are not available or accessible on the system.
-    
-    Raises:
-        Exception: If temperature reading fails due to system access issues or sensor unavailability.
-    
-    Note:
-        - Temperature readings may require elevated privileges on some systems
-        - Not all systems expose temperature sensors through standard interfaces
-        - Results vary based on available hardware sensors and system configuration
-    '''
-    operatingSystem = platform.system()
-
-    if operatingSystem == "Darwin": # macOS
-        return _get_mac_temps()
-    elif operatingSystem == "Linux":  # Linux
-        return _get_linux_temps()
-    elif operatingSystem == "Windows": # Windows:
-        return _get_windows_temps()
 
 def get_top_n_processes(n=5, type="cpu"):
     '''
@@ -367,85 +327,3 @@ def export_into_file(function, csv=False, params=(False, None)):
         
     except Exception as e:
         print(f"Error exporting to file: {e}")
-
-def system_health_score(cliVersion=False):
-    '''
-    Calculate a system health score based on various hardware metrics.
-    
-    This function evaluates the health of the system by calculating scores for CPU, memory, disk,
-    temperature, battery (if available), and network usage. Each metric contributes to a total score
-    that reflects the overall health of the system.
-
-    Args:
-        cliVersion (bool, optional): If True, returns a dictionary with individual scores for each metric.
-                                     If False, returns a single health score. Defaults to False.
-    
-    Returns:
-        float: A health score between 0 and 100, where 100 indicates optimal health.\n
-        OR\n
-        dict: If cliVersion is True, returns a dictionary with individual scores for each metric.\n
-        OR\n
-        exception: If any metric calculation fails.\n
-    
-    Raises:
-        Exception: If any metric calculation fails.
-    '''
-
-    return _system_health_score(cliVersion)
-
-def cpu_benchmark():
-    '''
-    Get CPU performance with some computational tasks, such as:\n
-    - Calculating large Fibonacci numbers\n
-    - Calculating large primes\n
-
-    Returns:
-     dict: {\n
-     "execution_time": time taken to execute (lower is better),\n
-     "fibonacci_10000th": fibonacci number computed,\n
-     "prime_count": prime number calculated in benchmark,\n
-     "score": score calculated (higher is better)\n
-     }
-     '''
-    
-    return _cpu_benchmark()
-
-def mem_benchmark():
-    '''Benchmark memory allocation and access speed using large lists
-    Returns:
-     dict: {\n
-     "execution_time": time taken to execute the program (lower is better),\n
-     "sum_calculated": total sum calculated during the test,\n
-     "score": the performance score on your ram (higher is better)\n
-     }
-    '''
-
-    return _mem_benchmark()
-
-def disk_benchmark():
-    '''
-    Benchmark disk I/O performance by writing and reading a 10MB test file.
-    
-    Returns:
-     dict: {
-     "write_speed": Write speed in MB/s,
-     "read_speed": Read speed in MB/s, 
-     "write_score": Write performance score (higher is better),
-     "read_score": Read performance score (higher is better),
-     "overall_score": Overall disk performance score (higher is better)
-     }
-    '''
-
-    return _disk_benchmark()
-
-if __name__ == "__main__":
-    # print(get_hardware_usage())
-    # print(get_system_specs())
-    # print(get_system_temps())
-    # print(get_top_n_processes())
-    export_into_file(get_top_n_processes, True, (True, [5, "mem"]))
-    # print(system_health_score())
-    # print(system_health_score(cliVersion=True))
-    # print(cpu_benchmark())
-    # print(mem_benchmark())
-    # print(disk_benchmark())
