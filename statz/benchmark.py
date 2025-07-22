@@ -1,7 +1,7 @@
 '''
 Benchmarking module for CPU, memory, and disk performance.'''
 
-from ._crossPlatform import _cpu_benchmark, _mem_benchmark, _disk_benchmark
+from .internal._crossPlatform import _cpu_benchmark, _mem_benchmark, _disk_benchmark
 
 def cpu_benchmark():
     '''

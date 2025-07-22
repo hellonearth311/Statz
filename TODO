@@ -1,10 +1,8 @@
-Verson 2.0.1
-- FIX BROKEN DASHBOARD
-- split it up into different modules (eg stats [contains usage, specs, top processes, export], temp, benchmark, health) ✂️✅
-
 Version 2.1.0
 - top process monitoring in dashboard 🕛
 - Compare against JSON file 🔍
+- put internal files inside an internal folder so it's harder to access them
+- fix broken CLI for statz --specs and statz --usage with no other args
 
 Version 2.2.0
 - internet speed test (ping and down/up speed)

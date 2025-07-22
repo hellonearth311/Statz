@@ -10,9 +10,9 @@ import time
 
 # import like this so i can test it easily
 try:
-    from ._crossPlatform import _get_usage
+    from .internal._crossPlatform import _get_usage
 except:
-    from _crossPlatform import _get_usage
+    from internal._crossPlatform import _get_usage
 
 init(autoreset=True)
 

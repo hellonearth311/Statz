@@ -2,10 +2,10 @@
 This module provides a unified interface to retrieve hardware usage, system specifications,
 top processes, and export data to files in JSON or CSV format.'''
 
-from ._getMacInfo import _get_mac_specs
-from ._getWindowsInfo import _get_windows_specs
-from ._getLinuxInfo import _get_linux_specs
-from ._crossPlatform import _get_usage, _get_top_n_processes
+from .internal._getMacInfo import _get_mac_specs
+from .internal._getWindowsInfo import _get_windows_specs
+from .internal._getLinuxInfo import _get_linux_specs
+from .internal._crossPlatform import _get_usage, _get_top_n_processes
 
 import platform
 from datetime import datetime, date

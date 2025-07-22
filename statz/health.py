@@ -1,7 +1,7 @@
 '''System health monitoring module for cross-platform systems.
 This module provides a unified interface to calculate system health scores based on various hardware metrics.'''
 
-from ._crossPlatform import _system_health_score
+from .internal._crossPlatform import _system_health_score
 
 def system_health_score(cliVersion=False):
     '''

@@ -34,15 +34,14 @@ from . import stats
 from .stats import (
     get_system_specs,
     get_hardware_usage, 
-    get_system_temps,
     get_top_n_processes,
-    system_health_score,
-    cpu_benchmark,
-    mem_benchmark,
-    disk_benchmark,
     export_into_file,
     __version__
 )
+
+from .temp import get_system_temps
+from .health import system_health_score
+from .benchmark import cpu_benchmark, mem_benchmark, disk_benchmark
 
 # Public API - all functions available for import
 __all__ = [

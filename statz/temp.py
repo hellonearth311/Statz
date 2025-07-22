@@ -3,9 +3,9 @@ This module provides a unified interface to retrieve temperature readings'''
 
 import platform
 
-from ._getMacInfo import _get_mac_temps
-from ._getLinuxInfo import _get_linux_temps
-from ._getWindowsInfo import _get_windows_temps
+from .internal._getMacInfo import _get_mac_temps
+from .internal._getLinuxInfo import _get_linux_temps
+from .internal._getWindowsInfo import _get_windows_temps
 
 def get_system_temps():
     '''
