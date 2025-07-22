@@ -274,8 +274,10 @@ usage = stats.get_hardware_usage(
 ### Temperature Monitoring
 
 ```python
+import statz.temp as temp
+
 # Get system temperature readings
-temps = stats.get_system_temps()
+temps = temp.get_system_temps()
 print(temps)
 
 # Returns platform-specific temperature data:
@@ -303,12 +305,14 @@ top_memory = stats.get_top_n_processes(n=15, type="mem")
 ### System Health Score
 
 ```python
+import statz.health as health
+
 # Get simple health score (0-100)
-health_score = stats.system_health_score()
+health_score = health.system_health_score()
 print(f"System Health: {health_score}/100")
 
 # Get detailed health breakdown
-health_details = stats.system_health_score(cliVersion=True)
+health_details = health.system_health_score(cliVersion=True)
 print(health_details)
 # Returns: {
 #   "cpu": 85.2,
@@ -323,18 +327,20 @@ print(health_details)
 ### Performance Benchmarking
 
 ```python
+import statz.benchmark as benchmark
+
 # Run CPU performance benchmark
-cpu_bench = stats.cpu_benchmark()
+cpu_bench = benchmark.cpu_benchmark()
 print(cpu_bench)
 # Returns: {"execution_time": 0.025, "fibonacci_10000th": "...", "prime_count": 1229, "score": 750.2}
 
 # Run memory performance benchmark
-mem_bench = stats.mem_benchmark()
+mem_bench = benchmark.mem_benchmark()
 print(mem_bench)
 # Returns: {"execution_time": 0.15, "sum_calculated": 999999000000, "score": 666.7}
 
 # Run disk performance benchmark
-disk_bench = stats.disk_benchmark()
+disk_bench = benchmark.disk_benchmark()
 print(disk_bench)
 # Returns: {"write_speed": 450.2, "read_speed": 380.1, "write_score": 450.2, "read_score": 380.1, "overall_score": 415.15}
 ```
@@ -377,19 +383,22 @@ elif current_os in ["Darwin", "Linux"]:  # macOS or Linux
 
 ```python
 import statz.stats as stats
+import statz.temp as temp
+import statz.benchmark as benchmark
+import statz.health as health
 
 try:
     # System information functions
     specs = stats.get_system_specs()
     usage = stats.get_hardware_usage()
-    temps = stats.get_system_temps()
+    temps = temp.get_system_temps()
     processes = stats.get_top_n_processes()
-    health = stats.system_health_score()
+    health_score = health.system_health_score()
     
     # Performance benchmarks
-    cpu_bench = stats.cpu_benchmark()
-    mem_bench = stats.mem_benchmark()
-    disk_bench = stats.disk_benchmark()
+    cpu_bench = benchmark.cpu_benchmark()
+    mem_bench = benchmark.mem_benchmark()
+    disk_bench = benchmark.disk_benchmark()
     
 except OSError as e:
     print(f"Unsupported operating system: {e}")
@@ -400,52 +409,17 @@ except Exception as e:
 
 ## 📝 Changelog
 
-### [v2.0.0 – Major Feature Release](https://github.com/hellonearth311/Statz/releases/tag/v2.0.0)
-- 🏁 Added Performance Benchmarking
-  - New `--benchmark` CLI flag for comprehensive system performance testing
-  - Component-specific benchmarks: `--benchmark --cpu`, `--benchmark --ram`, `--benchmark --disk`
-  - Programmatic access via `statz.cpu_benchmark()`, `statz.mem_benchmark()`, `statz.disk_benchmark()`
-  - Performance scoring system with color-coded ratings (Excellent 🚀, Good 🟢, Fair 🟡, Poor 🔴)
-  - CPU benchmark tests mathematical operations, Fibonacci calculations, and prime number generation
-  - Memory benchmark tests large array operations and memory allocation speed
-  - Disk benchmark measures read/write speeds with temporary file operations
+### [v2.0.1 – Minor Bugfixes and Improvements](https://github.com/hellonearth311/Statz/releases/tag/v2.0.1)
+- 🐞 Fixed broken dashboard
+ - The dashboard now works again, after I broke it when I optimized the get_usage() function.
 
-- 📊 CSV Export Functionality
-  - New `--csv` CLI flag for exporting data to CSV format
-  - Support for all data types: specs, usage, processes, health scores, benchmarks, temperatures
-  - Smart CSV formatting with proper headers, units, and user-friendly structure
-  - Hardware usage CSV includes component-wise data with appropriate units (MB, %, MB/s)
-  - System specs CSV organizes data by component type with clear property-value pairs
-  - Programmatic CSV export via `statz.export_into_file(function, csv=True)`
-
-- 📋 Rich Table Output
-  - New `--table` CLI flag for beautiful, formatted table display
-  - Professional table formatting using Rich library with rounded borders
-  - Context-aware labeling (Process, Drive, Module, Interface, etc.)
-  - Color-coded health scores and benchmark ratings in tables
-  - Multi-component table support with organized sections
-  - Special formatting for complex data types (GPU info, process lists, benchmark results)
-
-- 🐞 Major Bug Fixes and Improvements
-  - Fixed misleading RAM process reporting: Now shows absolute memory usage (MB/GB) instead of confusing percentages
-  - Improved process filtering: Excludes system/idle processes, shows only meaningful active processes
-  - Enhanced CPU usage accuracy: Properly caps CPU usage at 100% per process
-  - Better Windows temperature detection: Multiple fallback methods, improved error handling
-  - Enhanced CLI output formatting: Consistent formatting across all commands and data types
-  - Improved error messages: More informative error messages when features aren't available
-
-- 🔧 CLI Enhancements
-  - Better argument parsing and validation
-  - Improved help documentation with clearer descriptions
-  - Enhanced process monitoring with `--process-count` and `--process-type` options
-  - More robust error handling for unsupported features on different platforms
-  - Consistent output formatting across all commands
-
-- 📦 API Improvements
-  - Enhanced `export_into_file()` function with CSV support and parameter passing
-  - Better function documentation and examples
-  - Improved cross-platform compatibility
-  - More reliable temperature sensor detection on Windows systems
+- ✂️ Split apart the module into different sections
+  - The module is now split into 4 sections:
+    - `stats, temp, benchmark, health`
+      - `stats` contains `get_hardware_usage(), get_system_specs(), get_top_n_processes(), export_into_file()`
+      - `temp` contains `get_system_temps()`
+      - `benchmark` contains `cpu_benchmark, mem_benchmark, disk_benchmark()`
+      - `health` contains `system_health_score()`
 
 ## 📝 Side Note
 If you find any errors on Linux, please report them to me with as much detail as possible as I do not have a Linux machine.
