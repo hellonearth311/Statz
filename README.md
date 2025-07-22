@@ -10,7 +10,7 @@
 Works on **macOS**, **Linux**, and **Windows**, and handles OS-specific madness under the hood so you don’t have to.
 
 
-<img src="https://raw.githubusercontent.com/hellonearth311/Statz/refs/heads/main/img/logo.png" alt="statz logo" style="border-radius: 15px;" width=200>
+<img src="https://raw.githubusercontent.com/hellonearth311/Statz/refs/heads/main/img/logo.png" alt="statz logo" width=200>
 
 
 
