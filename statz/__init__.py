@@ -35,37 +35,26 @@ from .stats import (
     get_system_specs,
     get_hardware_usage, 
     get_top_n_processes,
-    export_into_file,
     __version__
 )
 
 from .temp import get_system_temps
 from .health import system_health_score
 from .benchmark import cpu_benchmark, mem_benchmark, disk_benchmark
+from .file import export_into_file, compare
 
-# Public API - all functions available for import
 __all__ = [
-    # Core system information functions
     "get_system_specs",
     "get_hardware_usage", 
     "get_system_temps",
-    
-    # Process and system monitoring
     "get_top_n_processes",
     "system_health_score",
-    
-    # Performance benchmarking
     "cpu_benchmark", 
     "mem_benchmark",
     "disk_benchmark",
-    
-    # Utility functions
     "export_into_file",
-    
-    # Module metadata
+    "compare"
     "__version__",
-    
-    # Module reference (for advanced usage)
     "stats"
 ]
 

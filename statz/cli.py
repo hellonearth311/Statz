@@ -2,6 +2,7 @@ from statz import stats
 from statz.benchmark import cpu_benchmark, mem_benchmark, disk_benchmark
 from statz.temp import get_system_temps
 from statz.health import system_health_score
+from statz.file import export_into_file
 from datetime import date, datetime
 from colorama import Fore, Style, init
 from .dashboard import run_dashboard
@@ -964,7 +965,7 @@ def main():
             export_func = lambda: specsOrUsage
         
         # Use the stats export function for CSV
-        stats.export_into_file(export_func, csv=True, params=(False, None))
+        export_into_file(export_func, csv=True, params=(False, None))
     elif args.table:
         # Handle table output format
         if isinstance(specsOrUsage, (tuple, list)):

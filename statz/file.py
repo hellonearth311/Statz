@@ -231,38 +231,109 @@ def compare(current_specs_path, baseline_specs_path):
             reader = csv_module.DictReader(f)
             for i, row in enumerate(reader):
                 component = row.get('Component', f'row_{i}')
+                property_name = row.get('Property', f'prop_{i}')
+                value = row.get('Value', '')
+                
                 if component not in data:
                     data[component] = {}
                 
-                for key, value in row.items():
-                    if key != 'Component':
-                        data[component][key] = value
+                data[component][property_name] = value
+        return data
+    
+    def normalize_json_data(data):
+        """Convert JSON list format to comparable dictionary structure."""
+        if isinstance(data, list):
+            # Convert list of dictionaries to component-based structure
+            normalized = {}
+            component_counters = {}
+            
+            for item in data:
+                if isinstance(item, dict):
+                    # Try to determine component type from the data
+                    if 'system' in item or 'version' in item:
+                        component_name = 'OS'
+                    elif 'name' in item and ('Intel' in str(item.get('name', '')) or 'AMD' in str(item.get('name', '')) or 'Core' in str(item.get('name', ''))):
+                        if 'Graphics' in str(item.get('name', '')) or 'NVIDIA' in str(item.get('name', '')):
+                            component_counters['GPU'] = component_counters.get('GPU', 0) + 1
+                            component_name = f"GPU {component_counters['GPU']}"
+                        else:
+                            component_name = 'CPU'
+                    elif 'capacity' in item or ('speed' in item and 'name' not in item):
+                        component_counters['Memory'] = component_counters.get('Memory', 0) + 1
+                        component_name = f"Memory {component_counters['Memory']}"
+                    elif 'size' in item or 'model' in item:
+                        component_counters['Storage'] = component_counters.get('Storage', 0) + 1
+                        component_name = f"Storage {component_counters['Storage']}"
+                    elif 'adapter' in item or ('description' in item and 'Intel' not in str(item.get('description', ''))):
+                        component_counters['Network'] = component_counters.get('Network', 0) + 1
+                        component_name = f"Network {component_counters['Network']}"
+                    elif 'percent' in item or 'pluggedIn' in item:
+                        component_name = 'Battery'
+                    else:
+                        # Unknown component
+                        component_counters['Unknown'] = component_counters.get('Unknown', 0) + 1
+                        component_name = f"Unknown {component_counters['Unknown']}"
+                    
+                    # Convert all values to strings for consistent comparison
+                    string_item = {}
+                    for k, v in item.items():
+                        string_item[k] = str(v)
+                    
+                    normalized[component_name] = string_item
+                elif isinstance(item, list):
+                    # Handle nested lists (like GPU arrays)
+                    for j, subitem in enumerate(item):
+                        if isinstance(subitem, dict):
+                            component_counters['GPU'] = component_counters.get('GPU', 0) + 1
+                            # Convert all values to strings
+                            string_subitem = {}
+                            for k, v in subitem.items():
+                                string_subitem[k] = str(v)
+                            normalized[f"GPU {component_counters['GPU']}"] = string_subitem
+            
+            return normalized
         return data
     
     def deep_compare(dict1, dict2, path=""):
         """Recursively compare two dictionaries."""
         differences = {'added': {}, 'removed': {}, 'changed': {}}
         
+        # Ensure both inputs are dictionaries
+        if not isinstance(dict1, dict):
+            dict1 = {}
+        if not isinstance(dict2, dict):
+            dict2 = {}
+        
+        # Check for removed and changed items
         for key in dict1:
-            current_path = f"{path}.{key}" if path else key
+            # Ensure key is hashable (string)
+            key_str = str(key)
+            current_path = f"{path}.{key_str}" if path else key_str
             
             if key not in dict2:
-                differences['removed'][current_path] = dict1[key]
+                differences['removed'][current_path] = str(dict1[key])[:100]
             elif isinstance(dict1[key], dict) and isinstance(dict2[key], dict):
+                # Recursively compare nested dictionaries
                 nested_diff = deep_compare(dict1[key], dict2[key], current_path)
                 differences['added'].update(nested_diff['added'])
                 differences['removed'].update(nested_diff['removed'])
                 differences['changed'].update(nested_diff['changed'])
-            elif dict1[key] != dict2[key]:
-                differences['changed'][current_path] = {
-                    'from': dict1[key], 
-                    'to': dict2[key]
-                }
+            elif str(dict1[key]) != str(dict2[key]):  # Compare as strings for consistency
+                # Only add to changed if the values are actually different
+                val1 = str(dict1[key]).strip()
+                val2 = str(dict2[key]).strip()
+                if val1 != val2:
+                    differences['changed'][current_path] = {
+                        'from': val1[:100],  # Limit string length
+                        'to': val2[:100]     # Limit string length
+                    }
         
+        # Check for added items
         for key in dict2:
-            current_path = f"{path}.{key}" if path else key
+            key_str = str(key)
+            current_path = f"{path}.{key_str}" if path else key_str
             if key not in dict1:
-                differences['added'][current_path] = dict2[key]
+                differences['added'][current_path] = str(dict2[key])[:100]  # Limit string length
         
         return differences
     
@@ -272,6 +343,7 @@ def compare(current_specs_path, baseline_specs_path):
         
         if current_ext == "json":
             current_data = load_json_file(current_specs_path)
+            current_data = normalize_json_data(current_data)
         elif current_ext == "csv":
             current_data = load_csv_file(current_specs_path)
         else:
@@ -279,6 +351,7 @@ def compare(current_specs_path, baseline_specs_path):
         
         if baseline_ext == "json":
             baseline_data = load_json_file(baseline_specs_path)
+            baseline_data = normalize_json_data(baseline_data)
         elif baseline_ext == "csv":
             baseline_data = load_csv_file(baseline_specs_path)
         else:
@@ -308,3 +381,7 @@ def compare(current_specs_path, baseline_specs_path):
             "removed": {"error": f"Comparison failed: {str(e)}"},
             "changed": {"error": f"Comparison failed: {str(e)}"}
         }
+
+
+if __name__ == "__main__":
+    print(compare("C:\\Users\\sarik\\Documents\\Code\\statz\\statz\\statz_export_2025-07-23_15-13-05.json", "C:\\Users\\sarik\\Documents\\Code\\statz\\statz\\statz_export_2025-07-23_15-13-13.csv"))
