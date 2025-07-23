@@ -10,6 +10,7 @@ This test suite covers all module functionality including:
 - System health scoring (system_health_score)
 - Performance benchmarking (cpu_benchmark, mem_benchmark, disk_benchmark)
 - Export functionality (JSON and CSV)
+- File comparison functionality (compare)
 - Error handling and edge cases
 - Cross-platform compatibility
 - Performance and stress testing
@@ -23,6 +24,7 @@ Usage:
     python module_test.py --health           # Run health scoring tests only
     python module_test.py --benchmark        # Run benchmarking tests only
     python module_test.py --export           # Run export functionality tests only
+    python module_test.py --compare          # Run file comparison tests only
     python module_test.py --stress           # Run stress/performance tests only
     python module_test.py --verbose          # Verbose output
 """
@@ -48,7 +50,7 @@ try:
     from statz.benchmark import cpu_benchmark, mem_benchmark, disk_benchmark
     from statz.temp import get_system_temps
     from statz.health import system_health_score
-    from statz.file import export_into_file
+    from statz.file import export_into_file, compare
 except ImportError as e:
     print(f"❌ Failed to import statz module: {e}")
     sys.exit(1)
@@ -585,6 +587,7 @@ class ModuleTester:
             self.test_health_scoring()
             self.test_benchmarking()
             self.test_export_functionality()
+            self.test_file_comparison()
             self.test_error_handling()
             self.test_data_validation()
             self.test_stress_performance()
@@ -644,7 +647,314 @@ class ModuleTester:
         print(f"{Colors.BOLD}💪 Running Stress Tests Only{Colors.END}\n")
         self.test_stress_performance()
         return self.print_summary()
-
+    
+    def run_file_comparison_tests(self):
+        """Run only file comparison tests"""
+        print(f"{Colors.BOLD}📁 Running File Comparison Tests Only{Colors.END}\n")
+        try:
+            self.test_file_comparison()
+        finally:
+            self.cleanup_test_files()
+        return self.print_summary()
+    
+    def test_file_comparison(self):
+        """Test file comparison functionality"""
+        print(f"\n{Colors.BOLD}📁 Testing File Comparison{Colors.END}")
+        
+        # Create test data for comparison
+        test_data_1 = {
+            "OS": {"name": "Windows 10", "version": "10.0.19041"},
+            "CPU": {"name": "Intel Core i5", "cores": "4", "speed": "2.5GHz"},
+            "Memory 1": {"capacity": "8GB", "type": "DDR4"},
+            "Storage 1": {"size": "500GB", "type": "SSD"}
+        }
+        
+        test_data_2 = {
+            "OS": {"name": "Windows 10", "version": "10.0.19042"},  # Version changed
+            "CPU": {"name": "Intel Core i5", "cores": "4", "speed": "2.5GHz"},
+            "Memory 1": {"capacity": "16GB", "type": "DDR4"},  # Capacity changed
+            "Storage 1": {"size": "500GB", "type": "SSD"},
+            "GPU": {"name": "NVIDIA GTX 1060", "memory": "6GB"}  # New component added
+        }
+        
+        # Test JSON to JSON comparison
+        json_file_1 = self.test_output_dir / "test_specs_1.json"
+        json_file_2 = self.test_output_dir / "test_specs_2.json"
+        
+        try:
+            # Write test JSON files
+            with open(json_file_1, 'w') as f:
+                json.dump(test_data_1, f, indent=2)
+            with open(json_file_2, 'w') as f:
+                json.dump(test_data_2, f, indent=2)
+            
+            # Test JSON comparison
+            comparison_result = compare(str(json_file_2), str(json_file_1))
+            
+            # Validate comparison structure
+            expected_keys = ['added', 'removed', 'changed', 'summary']
+            has_expected_structure = all(key in comparison_result for key in expected_keys)
+            
+            result = TestResult(
+                "JSON comparison structure test",
+                has_expected_structure,
+                f"Comparison keys: {list(comparison_result.keys())}",
+                "Missing expected keys in comparison result" if not has_expected_structure else "",
+                0.0
+            )
+            self.add_result(result)
+            
+            # Test if changes were detected correctly
+            has_changes = (len(comparison_result['added']) > 0 or 
+                          len(comparison_result['changed']) > 0 or 
+                          len(comparison_result['removed']) > 0)
+            
+            result = TestResult(
+                "JSON comparison change detection",
+                has_changes,
+                f"Added: {len(comparison_result['added'])}, Changed: {len(comparison_result['changed'])}, Removed: {len(comparison_result['removed'])}",
+                "No changes detected when there should be differences" if not has_changes else "",
+                0.0
+            )
+            self.add_result(result)
+            
+            # Test summary information
+            has_summary = 'summary' in comparison_result and 'total_added' in comparison_result['summary']
+            result = TestResult(
+                "JSON comparison summary test",
+                has_summary,
+                f"Summary: {comparison_result.get('summary', {})}",
+                "Missing or invalid summary information" if not has_summary else "",
+                0.0
+            )
+            self.add_result(result)
+            
+        except Exception as e:
+            result = TestResult(
+                "JSON comparison test",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+        
+        # Test CSV comparison
+        csv_file_1 = self.test_output_dir / "test_specs_1.csv"
+        csv_file_2 = self.test_output_dir / "test_specs_2.csv"
+        
+        try:
+            # Write test CSV files
+            with open(csv_file_1, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['Component', 'Property', 'Value'])
+                writer.writerow(['OS', 'name', 'Windows 10'])
+                writer.writerow(['OS', 'version', '10.0.19041'])
+                writer.writerow(['CPU', 'name', 'Intel Core i5'])
+                writer.writerow(['CPU', 'cores', '4'])
+                writer.writerow(['Memory 1', 'capacity', '8GB'])
+            
+            with open(csv_file_2, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['Component', 'Property', 'Value'])
+                writer.writerow(['OS', 'name', 'Windows 10'])
+                writer.writerow(['OS', 'version', '10.0.19042'])  # Changed
+                writer.writerow(['CPU', 'name', 'Intel Core i5'])
+                writer.writerow(['CPU', 'cores', '4'])
+                writer.writerow(['Memory 1', 'capacity', '16GB'])  # Changed
+                writer.writerow(['GPU', 'name', 'NVIDIA GTX 1060'])  # Added
+            
+            # Test CSV comparison
+            comparison_result = compare(str(csv_file_2), str(csv_file_1))
+            
+            has_expected_structure = all(key in comparison_result for key in expected_keys)
+            result = TestResult(
+                "CSV comparison structure test",
+                has_expected_structure,
+                f"Comparison keys: {list(comparison_result.keys())}",
+                "Missing expected keys in CSV comparison result" if not has_expected_structure else "",
+                0.0
+            )
+            self.add_result(result)
+            
+            # Test if changes were detected
+            has_changes = (len(comparison_result['added']) > 0 or 
+                          len(comparison_result['changed']) > 0 or 
+                          len(comparison_result['removed']) > 0)
+            
+            result = TestResult(
+                "CSV comparison change detection",
+                has_changes,
+                f"Added: {len(comparison_result['added'])}, Changed: {len(comparison_result['changed'])}, Removed: {len(comparison_result['removed'])}",
+                "No changes detected in CSV comparison when there should be differences" if not has_changes else "",
+                0.0
+            )
+            self.add_result(result)
+            
+        except Exception as e:
+            result = TestResult(
+                "CSV comparison test",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+        
+        # Test cross-format comparison (JSON to CSV)
+        try:
+            comparison_result = compare(str(json_file_1), str(csv_file_1))
+            
+            # Should work despite different formats
+            has_expected_structure = all(key in comparison_result for key in expected_keys)
+            result = TestResult(
+                "Cross-format comparison (JSON to CSV)",
+                has_expected_structure,
+                f"Cross-format comparison successful: {list(comparison_result.keys())}",
+                "Cross-format comparison failed" if not has_expected_structure else "",
+                0.0
+            )
+            self.add_result(result)
+            
+        except Exception as e:
+            result = TestResult(
+                "Cross-format comparison (JSON to CSV)",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+        
+        # Test identical file comparison
+        try:
+            comparison_result = compare(str(json_file_1), str(json_file_1))
+            
+            # Should show no changes when comparing identical files
+            no_changes = (len(comparison_result['added']) == 0 and 
+                         len(comparison_result['changed']) == 0 and 
+                         len(comparison_result['removed']) == 0)
+            
+            result = TestResult(
+                "Identical file comparison test",
+                no_changes,
+                f"Identical comparison: Added: {len(comparison_result['added'])}, Changed: {len(comparison_result['changed'])}, Removed: {len(comparison_result['removed'])}",
+                "Identical files showing differences" if not no_changes else "",
+                0.0
+            )
+            self.add_result(result)
+            
+        except Exception as e:
+            result = TestResult(
+                "Identical file comparison test",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+        
+        # Test error handling for non-existent files
+        try:
+            comparison_result = compare("non_existent_file.json", "another_non_existent_file.json")
+            
+            # Should return error structure
+            has_error_handling = 'error' in str(comparison_result)
+            result = TestResult(
+                "Non-existent file error handling",
+                has_error_handling,
+                f"Error handling working: {str(comparison_result)[:100]}",
+                "Error handling not working for non-existent files" if not has_error_handling else "",
+                0.0
+            )
+            self.add_result(result)
+            
+        except Exception as e:
+            result = TestResult(
+                "Non-existent file error handling",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+        
+        # Test unsupported file format
+        try:
+            txt_file = self.test_output_dir / "test.txt"
+            with open(txt_file, 'w') as f:
+                f.write("This is a text file")
+            
+            comparison_result = compare(str(txt_file), str(json_file_1))
+            
+            # Should return error for unsupported format
+            has_error_handling = 'error' in str(comparison_result)
+            result = TestResult(
+                "Unsupported file format error handling",
+                has_error_handling,
+                f"Unsupported format handling: {str(comparison_result)[:100]}",
+                "Error handling not working for unsupported file formats" if not has_error_handling else "",
+                0.0
+            )
+            self.add_result(result)
+            
+        except Exception as e:
+            result = TestResult(
+                "Unsupported file format error handling",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+        
+        # Test with real system specs data
+        try:
+            # Generate real system specs
+            real_specs = get_system_specs()
+            
+            # Export to both JSON and CSV
+            real_json_file = self.test_output_dir / "real_specs.json"
+            real_csv_file = self.test_output_dir / "real_specs.csv"
+            
+            with open(real_json_file, 'w') as f:
+                json.dump(real_specs, f, indent=2)
+            
+            # Convert to CSV format for testing
+            with open(real_csv_file, 'w', newline='') as f:
+                writer = csv.writer(f)
+                writer.writerow(['Component', 'Property', 'Value'])
+                
+                if isinstance(real_specs, list):
+                    for i, item in enumerate(real_specs):
+                        if isinstance(item, dict):
+                            component_name = f"Component_{i}"
+                            for key, value in item.items():
+                                writer.writerow([component_name, key, str(value)])
+            
+            # Test comparison with real data
+            comparison_result = compare(str(real_json_file), str(real_csv_file))
+            
+            has_expected_structure = all(key in comparison_result for key in expected_keys)
+            result = TestResult(
+                "Real system specs comparison test",
+                has_expected_structure,
+                f"Real specs comparison successful with {comparison_result.get('summary', {}).get('total_added', 0)} changes detected",
+                "Real specs comparison failed" if not has_expected_structure else "",
+                0.0
+            )
+            self.add_result(result)
+            
+        except Exception as e:
+            result = TestResult(
+                "Real system specs comparison test",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+    
 def main():
     """Main test runner"""
     parser = argparse.ArgumentParser(description="statz Module Test Suite")
@@ -655,6 +965,7 @@ def main():
     parser.add_argument("--health", action="store_true", help="Run health scoring tests only")
     parser.add_argument("--benchmark", action="store_true", help="Run benchmarking tests only")
     parser.add_argument("--export", action="store_true", help="Run export functionality tests only")
+    parser.add_argument("--compare", action="store_true", help="Run file comparison tests only")
     parser.add_argument("--stress", action="store_true", help="Run stress/performance tests only")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     
@@ -678,6 +989,8 @@ def main():
         success = tester.run_benchmark_tests()
     elif args.export:
         success = tester.run_export_tests()
+    elif args.compare:
+        success = tester.run_file_comparison_tests()
     elif args.stress:
         success = tester.run_stress_tests()
     else:
