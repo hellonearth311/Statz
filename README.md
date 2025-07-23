@@ -345,20 +345,56 @@ print(disk_bench)
 # Returns: {"write_speed": 450.2, "read_speed": 380.1, "write_score": 450.2, "read_score": 380.1, "overall_score": 415.15}
 ```
 
-### Data Export
+### Data Export & File Operations
 
 ```python
+import statz.file as file
+
 # Export any function's output to a JSON file
-stats.export_into_file(stats.get_system_specs)
-stats.export_into_file(stats.get_hardware_usage)
-stats.export_into_file(lambda: stats.system_health_score(cliVersion=True))
+file.export_into_file(stats.get_system_specs)
+file.export_into_file(stats.get_hardware_usage)
+file.export_into_file(lambda: health.system_health_score(cliVersion=True))
 
 # Export to CSV format
-stats.export_into_file(stats.get_system_specs, csv=True)
-stats.export_into_file(stats.get_hardware_usage, csv=True)
-stats.export_into_file(stats.get_top_n_processes, csv=True)
+file.export_into_file(stats.get_system_specs, csv=True)
+file.export_into_file(stats.get_hardware_usage, csv=True)
+file.export_into_file(stats.get_top_n_processes, csv=True)
+
+# Export with function parameters
+file.export_into_file(stats.get_top_n_processes, csv=True, params=(True, [10, "cpu"]))
+file.export_into_file(benchmark.cpu_benchmark, csv=False)
 
 # Files are saved as: statz_export_YYYY-MM-DD_HH-MM-SS.json or .csv
+```
+
+### File Comparison
+
+```python
+import statz.file as file
+
+# Compare two system spec files to see what changed
+differences = file.compare(
+    "statz_export_2025-01-23_10-30-15.json",  # Current specs
+    "statz_export_2025-01-20_10-30-15.csv"    # Baseline specs
+)
+
+print(differences)
+# Returns: {
+#   "added": {"GPU.newProperty": "new_value"},
+#   "removed": {"CPU.oldProperty": "old_value"}, 
+#   "changed": {"RAM.capacity": {"from": "8192", "to": "16384"}},
+#   "summary": {
+#     "total_added": 1,
+#     "total_removed": 1, 
+#     "total_changed": 1,
+#     "current_file": "statz_export_2025-01-23_10-30-15.json",
+#     "baseline_file": "statz_export_2025-01-20_10-30-15.csv"
+#   }
+# }
+
+# Supports cross-format comparison (JSON vs CSV, CSV vs JSON)
+json_vs_csv = file.compare("specs.json", "baseline.csv")
+csv_vs_json = file.compare("current.csv", "baseline.json")
 ```
 
 ### Platform-Specific Notes
@@ -386,6 +422,7 @@ import statz.stats as stats
 import statz.temp as temp
 import statz.benchmark as benchmark
 import statz.health as health
+import statz.file as file
 
 try:
     # System information functions
@@ -400,6 +437,10 @@ try:
     mem_bench = benchmark.mem_benchmark()
     disk_bench = benchmark.disk_benchmark()
     
+    # File operations
+    file.export_into_file(stats.get_system_specs, csv=True)
+    differences = file.compare("current.json", "baseline.csv")
+    
 except OSError as e:
     print(f"Unsupported operating system: {e}")
 except Exception as e:
@@ -409,17 +450,33 @@ except Exception as e:
 
 ## 📝 Changelog
 
-### [v2.0.1 – Minor Bugfixes and Improvements](https://github.com/hellonearth311/Statz/releases/tag/v2.0.1)
-- 🐞 Fixed broken dashboard
- - The dashboard now works again, after I broke it when I optimized the get_usage() function.
+### [v2.1.0 – Major Improvements and File Management](https://github.com/hellonearth311/Statz/releases/tag/v2.1.0)
 
-- ✂️ Split apart the module into different sections
-  - The module is now split into 4 sections:
-    - `stats, temp, benchmark, health`
-      - `stats` contains `get_hardware_usage(), get_system_specs(), get_top_n_processes(), export_into_file()`
-      - `temp` contains `get_system_temps()`
-      - `benchmark` contains `cpu_benchmark, mem_benchmark, disk_benchmark()`
-      - `health` contains `system_health_score()`
+### ✨ New Features
+- **🕛 Top Process Monitoring in Dashboard** - The live dashboard now displays real-time top CPU and memory processes alongside system usage metrics
+- **🔍 File Comparison System** - Compare system specifications between JSON and CSV export files to track hardware changes over time
+- **💾 Dedicated File Module** - File operations (export and comparison) moved to a separate `statz.file` module for better organization
+
+### 🔧 Improvements  
+- **🔒 Enhanced Security** - Internal platform-specific files moved to `internal/` folder to reduce direct access
+- **🛠️ Fixed CLI Issues** - Resolved broken CLI behavior for `statz --specs` and `statz --usage` commands when used without component flags
+- **🐛 Better Error Handling** - Improved error handling and graceful failure management across all functions
+
+### 🏗️ Architecture Changes
+- **📁 Modular Structure** - File export and comparison functionality separated into dedicated `file.py` module
+- **🖥️ Dashboard Enhancement** - Live dashboard now shows three side-by-side tables: system usage, top CPU processes, and top memory processes
+- **🔧 CLI Robustness** - Fixed import errors and function references that caused CLI crashes
+
+### 📋 Technical Details
+- Export functions moved from `stats.py` to `file.py`
+- New `compare()` function supports JSON-to-CSV and CSV-to-JSON comparisons
+- Dashboard layout improved with Rich Columns for better visualization
+- Internal cross-platform modules reorganized for security
+
+### 🔄 Breaking Changes
+- `export_into_file()` moved from `statz.stats` to `statz.file`
+- Import statements for file operations need to be updated
+
 
 ## 📝 Side Note
 If you find any errors on Linux, please report them to me with as much detail as possible as I do not have a Linux machine.

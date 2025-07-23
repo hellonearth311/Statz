@@ -384,4 +384,4 @@ def compare(current_specs_path, baseline_specs_path):
 
 
 if __name__ == "__main__":
-    print(compare("C:\\Users\\sarik\\Documents\\Code\\statz\\statz\\statz_export_2025-07-23_15-13-05.json", "C:\\Users\\sarik\\Documents\\Code\\statz\\statz\\statz_export_2025-07-23_15-13-13.csv"))
+    print(compare("a.json", "b.json"))
