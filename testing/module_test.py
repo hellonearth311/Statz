@@ -44,19 +44,11 @@ from unittest.mock import patch, MagicMock
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 try:
-    import statz
-    from statz import (
-        get_system_specs,
-        get_hardware_usage,
-        get_top_n_processes,
-        get_system_temps,
-        system_health_score,
-        cpu_benchmark,
-        mem_benchmark,
-        disk_benchmark,
-        export_into_file,
-        __version__
-    )
+    from statz.stats import get_hardware_usage, get_system_specs, get_top_n_processes, __version__
+    from statz.benchmark import cpu_benchmark, mem_benchmark, disk_benchmark
+    from statz.temp import get_system_temps
+    from statz.health import system_health_score
+    from statz.file import export_into_file
 except ImportError as e:
     print(f"❌ Failed to import statz module: {e}")
     sys.exit(1)
