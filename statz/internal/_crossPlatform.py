@@ -161,6 +161,9 @@ def _get_top_n_processes(n=5, type="cpu"):
             int(n)
         except:
             raise TypeError(f"n must be int, not {type(n)}")
+    
+        if n < 1:
+            raise ValueError(f"n must be positive int, not {n}")
         
         # First, initialize CPU monitoring for all processes
         if type == "cpu":

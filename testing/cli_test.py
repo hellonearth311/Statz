@@ -277,7 +277,7 @@ class CLITester:
     
     def test_process_monitoring(self):
         """Test process monitoring options"""
-        print(f"\n{Colors.BOLD}⚙️ Testing Process Monitoring{Colors.END}")
+        print(f"\n{Colors.BOLD}⚙️  Testing Process Monitoring{Colors.END}")
         
         process_tests = [
             (["--processes"], "Default process monitoring"),

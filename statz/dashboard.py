@@ -1,6 +1,7 @@
 from rich.live import Live
 from rich.table import Table
 from rich.progress import Progress, SpinnerColumn, TextColumn, BarColumn, MofNCompleteColumn
+from rich.columns import Columns
 from time import sleep
 from colorama import Fore, init
 
@@ -149,12 +150,25 @@ def safe_get_usage():
         print(f"Error getting usage data: {e}")
         return [{"error": "CPU data unavailable"}, {"error": "RAM data unavailable"}, {"error": "Disk data unavailable"}, {"error": "Network data unavailable"}, {"error": "Battery data unavailable"}]
 
+def get_top_processes(type="cpu"):
+    try:
+        from .internal._crossPlatform import _get_top_n_processes
+    except:
+        from statz.internal._crossPlatform import _get_top_n_processes
+
+    if type == "cpu":
+        return _get_top_n_processes(type="cpu")
+    elif type == "mem":
+        return _get_top_n_processes(type="mem")
+    else:
+        return [{"error": "invalid type"}]
+
 def make_table():
-    """Create the dashboard table with real usage data"""
-    table = Table(title=f"🖥️ System Usage Dashboard - {platform.node()}")
-    table.add_column("Component", style="cyan", width=12)
-    table.add_column("Usage", style="magenta", width=25)
-    table.add_column("Visual", style="green", width=30)
+    """Create the dashboard specs_table with real usage data"""
+    specs_table = Table(title=f"🖥️  System Usage Dashboard - {platform.node()}")
+    specs_table.add_column("Component", style="cyan", width=12)
+    specs_table.add_column("Usage", style="magenta", width=25)
+    specs_table.add_column("Visual", style="green", width=30)
 
     # Get real usage data - returns [cpu_usage, ram_usage, disk_usages, network_usage, battery_usage]
     usage_data = safe_get_usage()
@@ -268,20 +282,47 @@ def make_table():
             usage_value = f"Error: {str(e)[:20]}"
             visual_bar = "░" * 20
             
-        table.add_row(component, usage_value, visual_bar)
+        specs_table.add_row(component, usage_value, visual_bar)
     
-    return table
+    # top cpu processes
+    top_cpu_processes_table = Table(title=f"🧠 Top CPU Processes")
+
+    top_cpu_processes_table.add_column("Name", style="cyan", width=12)
+    top_cpu_processes_table.add_column("CPU Usage", style="magenta", width=12)
+    top_cpu_processes_table.add_column("PID", style="green", width=12)
+
+    top_cpu_processes = get_top_processes()
+    for cpu_process in top_cpu_processes:
+        top_cpu_processes_table.add_row(str(cpu_process["name"]), str(cpu_process["usage"]), str(cpu_process["pid"]))
+    
+    # top RAM processes
+    top_mem_processes_table = Table(title=f"🗄️  Top RAM Processes")
+
+    top_mem_processes_table.add_column("Name", style="cyan", width=12)
+    top_mem_processes_table.add_column("CPU Usage", style="magenta", width=12)
+    top_mem_processes_table.add_column("PID", style="green", width=12)
+
+    top_mem_processes = get_top_processes("mem")
+    for mem_process in top_mem_processes:
+        top_mem_processes_table.add_row(str(mem_process["name"]), str(mem_process["usage"]), str(mem_process["pid"]))
+
+
+    return specs_table, top_cpu_processes_table, top_mem_processes_table
+
+def get_dashboard_columns():
+    """Return Columns object with all dashboard tables side by side"""
+    specs_table, top_cpu_processes_table, top_mem_processes_table = make_table()
+    return Columns([specs_table, top_cpu_processes_table, top_mem_processes_table])
 
 def run_dashboard(refresh_rate=2):
     """Run dashboard until user stops it with Ctrl+C."""
     print(f"🚀 Starting dashboard with {refresh_rate}s refresh rate...")
     print("Press Ctrl+C to stop")
-    
     try:
-        with Live(make_table(), refresh_per_second=1/refresh_rate) as live:
+        with Live(get_dashboard_columns(), refresh_per_second=1/refresh_rate) as live:
             while True:
                 sleep(refresh_rate)
-                live.update(make_table())
+                live.update(get_dashboard_columns())
     except KeyboardInterrupt:
         print(Fore.RED + "\n✋ Dashboard stopped by user.")
     except Exception as e:

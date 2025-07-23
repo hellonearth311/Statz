@@ -1,13 +1,14 @@
 Version 2.1.0
-- 🕛 Top process monitoring in dashboard
+- 🕛 Top process monitoring in dashboard ✅
 - 🔍 Compare against JSON file
 - 🔒 Put internal files inside an internal folder so it's harder to access them ✅
 - 🛠️ Fix broken CLI for statz --specs and statz --usage with no other args and benchmarks ✅
-- 🐛 Fix bad error handling for functions
+- 🐛 Fix bad error handling for functions ✅
 
 Version 2.2.0
 - 🌐 Internet speed test (ping and down/up speed)
 - ☁️ Upload data to cloud
+- ⚙️ Choose path for exports
 
 Version 2.3.0
 - 🎮 Get GPU usage on Windows by writing a C script
