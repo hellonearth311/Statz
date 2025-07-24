@@ -42,6 +42,7 @@ from .temp import get_system_temps
 from .health import system_health_score
 from .benchmark import cpu_benchmark, mem_benchmark, disk_benchmark
 from .file import export_into_file, compare
+from .internet import internet_speed_test
 
 __all__ = [
     "get_system_specs",
@@ -53,9 +54,10 @@ __all__ = [
     "mem_benchmark",
     "disk_benchmark",
     "export_into_file",
-    "compare"
+    "compare",
     "__version__",
-    "stats"
+    "stats",
+    "internet_speed_test"
 ]
 
 # Version information

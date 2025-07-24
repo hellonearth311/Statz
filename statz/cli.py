@@ -3,6 +3,7 @@ from statz.benchmark import cpu_benchmark, mem_benchmark, disk_benchmark
 from statz.temp import get_system_temps
 from statz.health import system_health_score
 from statz.file import export_into_file
+from statz.internet import internet_speed_test
 from datetime import date, datetime
 from colorama import Fore, Style, init
 from .dashboard import run_dashboard
@@ -750,6 +751,7 @@ def main():
     parser.add_argument("--temp", action="store_true", help="Get temperature readings")
     parser.add_argument("--health", action="store_true", help="Get system health score")
     parser.add_argument("--benchmark", action="store_true", help="Run system performance benchmark")
+    parser.add_argument("--internetspeedtest", action="store_true", help="Run an internet speed test and get the upload/download speed as well as ping")
 
     parser.add_argument("--json", action="store_true", help="Output specs/usage as a JSON")
     parser.add_argument("--out", action="store_true", help="Write specs/usage into a JSON file")
@@ -770,7 +772,7 @@ def main():
     any_component_requested = any(component_flags)
 
     # Determine what data to retrieve
-    if args.benchmark and not args.specs and not args.usage and not args.temp and not args.processes and not args.health:
+    if args.benchmark and not args.specs and not args.usage and not args.temp and not args.processes and not args.health and not args.internetspeedtest:
         # Handle standalone benchmark command
         if any([args.cpu, args.ram, args.disk]):
             # Run specific component benchmarks
@@ -787,7 +789,7 @@ def main():
                 }
             except Exception as e:
                 specsOrUsage = {"benchmark": {"error": f"Benchmark failed: {str(e)}"}}
-    elif args.health and not args.specs and not args.usage and not args.temp and not args.processes:
+    elif args.health and not args.specs and not args.usage and not args.temp and not args.processes and not args.internetspeedtest:
         # Handle standalone health score command
         try:
             specsOrUsage = {"health": stats.system_health_score(cliVersion=True)}
@@ -803,7 +805,7 @@ def main():
                 specsOrUsage["temperature"] = {"error": "Temperature information not available on this system"}
         except Exception as e:
             specsOrUsage = {"temperature": {"error": f"Temperature reading failed: {str(e)}"}}
-    elif args.processes and not args.specs and not args.usage and not args.temp and not args.dashboard:
+    elif args.processes and not args.specs and not args.usage and not args.temp and not args.dashboard and not args.internetspeedtest:
         # Handle standalone processes command
         try:
             specsOrUsage = {"processes": stats.get_top_n_processes(args.process_count, args.process_type)}
@@ -825,12 +827,28 @@ def main():
         else:
             # Get all usage
             specsOrUsage = stats.get_hardware_usage()
-    elif args.dashboard and not args.specs and not args.usage and not args.temp and not args.processes:
+    elif args.dashboard and not args.specs and not args.usage and not args.temp and not args.processes and not args.internetspeedtest:
         try:
             run_dashboard()
             return
         except Exception as e:
             print(f"{Fore.RED} Error starting dashboard: {e}{Style.RESET_ALL}")
+            return
+    elif args.internetspeedtest and not args.specs and not args.usage and not args.temp and not args.processes and not args.dashboard:
+        try:
+            print("Running internet speed test...")
+
+            results = internet_speed_test()
+
+            print("Test Successful! Results:")
+
+            print(f"    Download Speed: {results[0]} Mbps")
+            print(f"    Upload Speed: {results[1]} Mbps")
+            print(f"    Ping: {results[2]} ms")
+            return
+
+        except Exception as e:
+            print(f"{Fore.RED} Error running internet speed test: {e}{Style.RESET_ALL}")
             return
     else:
         parser.print_help()

@@ -5,12 +5,12 @@ Tests ping and upload/download speed
 import speedtest
 
 
-def internet_speed_test(round=True):
+def internet_speed_test(roundResult=True):
     """
     Run an internet speed test using the speedtest-cli library.\n
 
     Args:
-     round: whether or not to round the result. defaults to True.
+     roundResult: whether or not to round the result. defaults to True.
     
     ## Returns
      **download_speed**\n the download speed in mbps
@@ -31,7 +31,7 @@ def internet_speed_test(round=True):
     ping = st.results.ping
 
     # return the results
-    if round:
+    if roundResult:
         return round(download_speed, 2), round(upload_speed, 2), round(ping, 1)
     else:
         return download_speed, upload_speed, ping

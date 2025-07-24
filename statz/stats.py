@@ -10,7 +10,7 @@ from .internal._crossPlatform import _get_usage, _get_top_n_processes
 import platform
 
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=True, get_battery=True, **kwargs):
     '''
