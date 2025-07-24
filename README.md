@@ -179,8 +179,10 @@ statz --usage --processes --out
 | `--table` | Output in formatted table format |
 | `--csv` | Export to CSV file |
 | `--out` | Export to JSON file |
+| `--path {path}`| Specify the path of CSV or JSON export |
 | `--process-count N` | Number of processes to show (default: 5) |
 | `--process-type {cpu,mem}` | Sort processes by CPU or memory usage |
+| `--internetspeedtest` | Run an internet speed test |
 
 ### Examples
 
@@ -199,6 +201,9 @@ statz --usage --csv
 
 # Export system specs to JSON file
 statz --specs --out
+
+# Export system specs to JSON file with custom path specs.json
+statz --specs --out --path specs.json
 
 # Get system temperatures and CPU usage in table format
 statz --temp --usage --cpu --table
@@ -223,6 +228,9 @@ statz --benchmark --csv
 
 # Launch interactive dashboard for real-time monitoring
 statz --dashboard
+
+# Test internet speed
+statz --internetspeedtest
 ```
 ## 🔗 Links
 [PyPi Project 🐍](https://pypi.org/project/statz/)
@@ -446,36 +454,28 @@ except OSError as e:
 except Exception as e:
     print(f"Error getting system information: {e}")
 ```
+### Internet Testing
+```python
+from statz.internet import internet_speed_test
+
+results = internet_speed_test()
+
+print(f"Download Speed (Mbps): {results[0]}, Upload Speed (Mbps): {results[1]}, Ping (ms): {results[2]}")
+```
 
 
 ## 📝 Changelog
 
-### [v2.1.0 – Major Improvements and File Management](https://github.com/hellonearth311/Statz/releases/tag/v2.1.0)
+### [v2.2.0 – File Path Choosing ⚙️](https://github.com/hellonearth311/Statz/releases/tag/v2.1.0)
 
-### ✨ New Features
-- **🕛 Top Process Monitoring in Dashboard** - The live dashboard now displays real-time top CPU and memory processes alongside system usage metrics
-- **🔍 File Comparison System** - Compare system specifications between JSON and CSV export files to track hardware changes over time
-- **💾 Dedicated File Module** - File operations (export and comparison) moved to a separate `statz.file` module for better organization
+### 📄 Choose the path of an export
+- You can now choose the export of a file via the ```--path {path}``` flag or by specifying ```path={path}``` inside the ```statz.file.export_into_file()``` function
 
-### 🔧 Improvements  
-- **🔒 Enhanced Security** - Internal platform-specific files moved to `internal/` folder to reduce direct access
-- **🛠️ Fixed CLI Issues** - Resolved broken CLI behavior for `statz --specs` and `statz --usage` commands when used without component flags
-- **🐛 Better Error Handling** - Improved error handling and graceful failure management across all functions
+### 🌐 Internet Speed Test
+- Run an internet speed test via the ```--internetspeedtest``` flag to get the upload and download speed in Mbps and the ping in ms, or call the ```statz.internet.internet_speed_test(round=True/False)``` function to get a tuple: ```(download_speed, upload_speed, ping)```
 
-### 🏗️ Architecture Changes
-- **📁 Modular Structure** - File export and comparison functionality separated into dedicated `file.py` module
-- **🖥️ Dashboard Enhancement** - Live dashboard now shows three side-by-side tables: system usage, top CPU processes, and top memory processes
-- **🔧 CLI Robustness** - Fixed import errors and function references that caused CLI crashes
-
-### 📋 Technical Details
-- Export functions moved from `stats.py` to `file.py`
-- New `compare()` function supports JSON-to-CSV and CSV-to-JSON comparisons
-- Dashboard layout improved with Rich Columns for better visualization
-- Internal cross-platform modules reorganized for security
-
-### 🔄 Breaking Changes
-- `export_into_file()` moved from `statz.stats` to `statz.file`
-- Import statements for file operations need to be updated
+### 🐞 Fixed temperature bug in CLI
+- Fixed the broken temperature monitoring in the CLI
 
 
 ## 📝 Side Note

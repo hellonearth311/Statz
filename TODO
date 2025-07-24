@@ -1,7 +1,7 @@
 Version 2.2.0
-- 🌐 Internet speed test (ping and down/up speed)
-- ☁️ Upload data to cloud
-- ⚙️ Choose path for exports
+- 🌐 Internet speed test (ping and down/up speed) ✅
+- ⚙️ Choose path for exports (--path argument or specify path in export_into_file function) ✅
+- 🌡️ Fix --temps not working ✅
 
 Version 2.3.0
 - 🎮 Get GPU usage on Windows by writing a C script
@@ -16,7 +16,7 @@ Version 3.0.0
 Version 3.1.0
 - 🛡️ Detect malicious processes with AI / ML
 - 🏋️ Create custom benchmarks with AI / ML
-
+- ☁️ Upload data to cloud
 
 random stuff to do whenever
 - make a changelog.md file with all of the previous versions and their changelogs

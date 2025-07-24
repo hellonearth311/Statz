@@ -9,8 +9,9 @@ This test suite covers all module functionality including:
 - Temperature sensor readings (get_system_temps)~
 - System health scoring (system_health_score)
 - Performance benchmarking (cpu_benchmark, mem_benchmark, disk_benchmark)
-- Export functionality (JSON and CSV)
+- Export functionality (JSON and CSV) with custom paths
 - File comparison functionality (compare)
+- Internet speed testing (internet_speed_test)
 - Error handling and edge cases
 - Cross-platform compatibility
 - Performance and stress testing
@@ -25,6 +26,8 @@ Usage:
     python module_test.py --benchmark        # Run benchmarking tests only
     python module_test.py --export           # Run export functionality tests only
     python module_test.py --compare          # Run file comparison tests only
+    python module_test.py --internet         # Run internet speed tests only
+    python module_test.py --custompath       # Run custom path export tests only
     python module_test.py --stress           # Run stress/performance tests only
     python module_test.py --verbose          # Verbose output
 """
@@ -51,6 +54,7 @@ try:
     from statz.temp import get_system_temps
     from statz.health import system_health_score
     from statz.file import export_into_file, compare
+    from statz.internet import internet_speed_test
 except ImportError as e:
     print(f"❌ Failed to import statz module: {e}")
     sys.exit(1)
@@ -587,7 +591,9 @@ class ModuleTester:
             self.test_health_scoring()
             self.test_benchmarking()
             self.test_export_functionality()
+            self.test_custom_path_export()
             self.test_file_comparison()
+            self.test_internet_speed()
             self.test_error_handling()
             self.test_data_validation()
             self.test_stress_performance()
@@ -653,6 +659,21 @@ class ModuleTester:
         print(f"{Colors.BOLD}📁 Running File Comparison Tests Only{Colors.END}\n")
         try:
             self.test_file_comparison()
+        finally:
+            self.cleanup_test_files()
+        return self.print_summary()
+    
+    def run_internet_speed_tests(self):
+        """Run only internet speed tests"""
+        print(f"{Colors.BOLD}🌐 Running Internet Speed Tests Only{Colors.END}\n")
+        self.test_internet_speed()
+        return self.print_summary()
+    
+    def run_custom_path_tests(self):
+        """Run only custom path export tests"""
+        print(f"{Colors.BOLD}📁 Running Custom Path Export Tests Only{Colors.END}\n")
+        try:
+            self.test_custom_path_export()
         finally:
             self.cleanup_test_files()
         return self.print_summary()
@@ -955,6 +976,243 @@ class ModuleTester:
             )
             self.add_result(result)
     
+    def test_internet_speed(self):
+        """Test internet speed test functionality"""
+        print(f"\n{Colors.BOLD}🌐 Testing Internet Speed Test{Colors.END}")
+        
+        # Test basic internet speed test
+        result = self.run_test(internet_speed_test, "Basic internet speed test")
+        self.add_result(result)
+        
+        # Test with rounding disabled
+        result = self.run_test(internet_speed_test, "Internet speed test without rounding", roundResult=False)
+        self.add_result(result)
+        
+        # Test with rounding enabled explicitly
+        result = self.run_test(internet_speed_test, "Internet speed test with rounding", roundResult=True)
+        self.add_result(result)
+        
+        # Validate return structure
+        try:
+            speed_results = internet_speed_test()
+            
+            # Should return a tuple of 3 elements (download, upload, ping)
+            is_tuple = isinstance(speed_results, tuple)
+            has_three_elements = len(speed_results) == 3 if is_tuple else False
+            has_numeric_values = all(isinstance(x, (int, float)) for x in speed_results) if has_three_elements else False
+            
+            result = TestResult(
+                "Internet speed test structure validation",
+                is_tuple and has_three_elements and has_numeric_values,
+                f"Returned: {type(speed_results).__name__} with {len(speed_results) if is_tuple else 'N/A'} elements",
+                "Invalid return structure" if not (is_tuple and has_three_elements and has_numeric_values) else "",
+                0.0
+            )
+            self.add_result(result)
+            
+            # Validate reasonable values
+            if has_three_elements and has_numeric_values:
+                download, upload, ping = speed_results
+                reasonable_values = (
+                    0 <= download <= 10000 and  # Download speed 0-10Gbps
+                    0 <= upload <= 10000 and    # Upload speed 0-10Gbps
+                    0 <= ping <= 5000           # Ping 0-5000ms
+                )
+                
+                result = TestResult(
+                    "Internet speed test value validation",
+                    reasonable_values,
+                    f"Download: {download}Mbps, Upload: {upload}Mbps, Ping: {ping}ms",
+                    "Unreasonable speed test values" if not reasonable_values else "",
+                    0.0
+                )
+                self.add_result(result)
+            
+        except Exception as e:
+            result = TestResult(
+                "Internet speed test structure validation",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+    
+    def test_custom_path_export(self):
+        """Test custom path export functionality"""
+        print(f"\n{Colors.BOLD}📁 Testing Custom Path Export{Colors.END}")
+        
+        # Create test data for export
+        def test_data_simple():
+            return {"test": "data", "number": 42}
+        
+        def test_data_complex():
+            return get_system_specs()
+        
+        # Test custom JSON export
+        json_test_path = self.test_output_dir / "custom_test_export.json"
+        
+        try:
+            # Remove file if it exists
+            if json_test_path.exists():
+                json_test_path.unlink()
+            
+            export_into_file(test_data_simple, path=str(json_test_path), csv=False)
+            
+            # Check if file was created
+            file_created = json_test_path.exists()
+            
+            # Validate file content
+            valid_content = False
+            if file_created:
+                try:
+                    with open(json_test_path, 'r') as f:
+                        content = json.load(f)
+                        valid_content = content.get("test") == "data" and content.get("number") == 42
+                except (json.JSONDecodeError, IOError):
+                    valid_content = False
+            
+            result = TestResult(
+                "Custom JSON export path test",
+                file_created and valid_content,
+                f"File created: {file_created}, Valid content: {valid_content}",
+                "Custom JSON export failed" if not (file_created and valid_content) else "",
+                0.0
+            )
+            self.add_result(result)
+            
+        except Exception as e:
+            result = TestResult(
+                "Custom JSON export path test",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+        
+        # Test custom CSV export
+        csv_test_path = self.test_output_dir / "custom_test_export.csv"
+        
+        try:
+            # Remove file if it exists
+            if csv_test_path.exists():
+                csv_test_path.unlink()
+            
+            export_into_file(test_data_simple, path=str(csv_test_path), csv=True)
+            
+            # Check if file was created
+            file_created = csv_test_path.exists()
+            
+            # Validate file content (basic check)
+            valid_content = False
+            if file_created:
+                try:
+                    with open(csv_test_path, 'r') as f:
+                        content = f.read()
+                        # Check if it contains some expected content
+                        valid_content = len(content.strip()) > 0 and ('test' in content or 'number' in content)
+                except IOError:
+                    valid_content = False
+            
+            result = TestResult(
+                "Custom CSV export path test",
+                file_created and valid_content,
+                f"File created: {file_created}, Has content: {valid_content}",
+                "Custom CSV export failed" if not (file_created and valid_content) else "",
+                0.0
+            )
+            self.add_result(result)
+            
+        except Exception as e:
+            result = TestResult(
+                "Custom CSV export path test",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+        
+        # Test with complex data (system specs)
+        complex_json_path = self.test_output_dir / "custom_complex_export.json"
+        
+        try:
+            if complex_json_path.exists():
+                complex_json_path.unlink()
+            
+            export_into_file(test_data_complex, path=str(complex_json_path), csv=False)
+            
+            file_created = complex_json_path.exists()
+            
+            # Basic validation - file should exist and have reasonable size
+            valid_content = False
+            if file_created:
+                try:
+                    size = complex_json_path.stat().st_size
+                    valid_content = size > 100  # Should have substantial content
+                    
+                    # Try to parse as JSON
+                    with open(complex_json_path, 'r') as f:
+                        json.load(f)  # This will raise exception if invalid JSON
+                        
+                except (json.JSONDecodeError, IOError):
+                    valid_content = False
+            
+            result = TestResult(
+                "Custom complex data export test",
+                file_created and valid_content,
+                f"File created: {file_created}, Valid: {valid_content}",
+                "Complex data export failed" if not (file_created and valid_content) else "",
+                0.0
+            )
+            self.add_result(result)
+            
+        except Exception as e:
+            result = TestResult(
+                "Custom complex data export test",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+        
+        # Test with None path (should use default behavior)
+        try:
+            export_into_file(test_data_simple, path=None, csv=False)
+            
+            # Should create a file with default naming
+            import glob
+            default_files = glob.glob("statz_export_*.json")
+            file_created = len(default_files) > 0
+            
+            result = TestResult(
+                "Default path behavior test",
+                file_created,
+                f"Default files created: {len(default_files)}",
+                "Default path behavior failed" if not file_created else "",
+                0.0
+            )
+            self.add_result(result)
+            
+            # Clean up default files
+            for file in default_files:
+                try:
+                    os.remove(file)
+                except OSError:
+                    pass
+            
+        except Exception as e:
+            result = TestResult(
+                "Default path behavior test",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+    
 def main():
     """Main test runner"""
     parser = argparse.ArgumentParser(description="statz Module Test Suite")
@@ -966,6 +1224,8 @@ def main():
     parser.add_argument("--benchmark", action="store_true", help="Run benchmarking tests only")
     parser.add_argument("--export", action="store_true", help="Run export functionality tests only")
     parser.add_argument("--compare", action="store_true", help="Run file comparison tests only")
+    parser.add_argument("--internet", action="store_true", help="Run internet speed tests only")
+    parser.add_argument("--custompath", action="store_true", help="Run custom path export tests only")
     parser.add_argument("--stress", action="store_true", help="Run stress/performance tests only")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     
@@ -991,6 +1251,10 @@ def main():
         success = tester.run_export_tests()
     elif args.compare:
         success = tester.run_file_comparison_tests()
+    elif args.internet:
+        success = tester.run_internet_speed_tests()
+    elif args.custompath:
+        success = tester.run_custom_path_tests()
     elif args.stress:
         success = tester.run_stress_tests()
     else:

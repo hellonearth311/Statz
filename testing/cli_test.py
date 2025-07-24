@@ -3,10 +3,12 @@
 Comprehensive CLI Test Suite for statz
 
 This test suite covers all CLI functionality including:
-- Basic commands (specs, usage, processes, temp, health, benchmark)
+- Basic commands (specs, usage, processes, temp, health, benchmark, internetspeedtest)
 - Component-specific flags (cpu, ram, disk, gpu, network, battery, os)
 - Output formats (json, table, csv, out)
+- Custom path export functionality
 - Process monitoring options
+- Internet speed testing
 - Error handling and edge cases
 - Cross-platform compatibility
 
@@ -18,6 +20,8 @@ Usage:
     python cli_test.py --processes        # Run process monitoring tests only
     python cli_test.py --benchmarks       # Run benchmark tests only
     python cli_test.py --dashboard        # Test dashboard (interactive)
+    python cli_test.py --internet         # Run internet speed test only
+    python cli_test.py --custompath       # Run custom path export tests only
     python cli_test.py --verbose          # Verbose output
 """
 
@@ -346,6 +350,35 @@ class CLITester:
             success, output, error, duration = self.run_command(args, timeout=45)
             self.add_result(description, success, output, error, duration)
     
+    def test_internet_speed(self):
+        """Test internet speed test functionality"""
+        print(f"\n{Colors.BOLD}🌐 Testing Internet Speed Test{Colors.END}")
+        
+        # Note: Internet speed tests require network connectivity and can be slow
+        speed_tests = [
+            (["--internetspeedtest"], "Basic internet speed test"),
+            (["--internetspeedtest", "--json"], "Internet speed test JSON output"),
+            (["--internetspeedtest", "--table"], "Internet speed test table output"),
+        ]
+        
+        for args, description in speed_tests:
+            print(f"{Colors.YELLOW}Note: {description} may take 30-60 seconds...{Colors.END}")
+            # Internet speed tests can take much longer
+            success, output, error, duration = self.run_command(args, timeout=120)
+            
+            # Additional validation for speed test output
+            if success and output:
+                # Check if output contains expected speed test results
+                has_download = "download" in output.lower()
+                has_upload = "upload" in output.lower()
+                has_ping = "ping" in output.lower()
+                
+                if not (has_download and has_upload and has_ping):
+                    success = False
+                    error += " (Missing expected speed test results)"
+            
+            self.add_result(description, success, output, error, duration)
+    
     def _cleanup_export_files(self):
         """Clean up any existing export files"""
         import glob
@@ -402,6 +435,81 @@ class CLITester:
         except Exception as e:
             self.add_result("Dashboard functionality", False, "", str(e), 0.0)
     
+    def test_custom_path_export(self):
+        """Test custom path export functionality"""
+        print(f"\n{Colors.BOLD}📁 Testing Custom Path Export{Colors.END}")
+        
+        # Clean up any existing test files
+        test_files = [
+            "test_custom_specs.json",
+            "test_custom_usage.csv", 
+            "test_custom_processes.json",
+            "test_custom_benchmark.csv",
+            "custom_export_test.json",
+            "custom_export_test.csv"
+        ]
+        
+        for file in test_files:
+            try:
+                os.remove(f"../{file}")
+            except FileNotFoundError:
+                pass
+        
+        custom_path_tests = [
+            (["--specs", "--out", "--path", "test_custom_specs"], "Custom JSON export path"),
+            (["--usage", "--csv", "--path", "test_custom_usage"], "Custom CSV export path"),
+            (["--processes", "--out", "--path", "test_custom_processes.json"], "Custom JSON with extension"),
+            (["--benchmark", "--csv", "--path", "test_custom_benchmark.csv"], "Custom CSV with extension"),
+            (["--specs", "--cpu", "--ram", "--out", "--path", "custom_export_test"], "Component-specific custom export"),
+            (["--usage", "--cpu", "--network", "--csv", "--path", "custom_export_test"], "Usage custom CSV export"),
+        ]
+        
+        for args, description in custom_path_tests:
+            success, output, error, duration = self.run_command(args)
+            
+            # Check if custom file was created
+            if success:
+                expected_file = None
+                path_arg = args[args.index("--path") + 1]
+                
+                if "--csv" in args:
+                    if not path_arg.endswith('.csv'):
+                        expected_file = f"../{path_arg}.csv"
+                    else:
+                        expected_file = f"../{path_arg}"
+                else:  # JSON
+                    if not path_arg.endswith('.json'):
+                        expected_file = f"../{path_arg}.json"
+                    else:
+                        expected_file = f"../{path_arg}"
+                
+                if expected_file and not os.path.exists(expected_file):
+                    success = False
+                    error += f" (Custom export file not created at {expected_file})"
+                
+                # Validate file content if created
+                if success and expected_file and os.path.exists(expected_file):
+                    try:
+                        with open(expected_file, 'r') as f:
+                            content = f.read()
+                            if not content.strip():
+                                success = False
+                                error += " (Export file is empty)"
+                            elif expected_file.endswith('.json'):
+                                json.loads(content)  # Validate JSON
+                    except (json.JSONDecodeError, IOError) as e:
+                        success = False
+                        error += f" (Invalid export file: {str(e)})"
+            
+            self.add_result(description, success, output, error, duration)
+        
+        # Clean up test files
+        for file in test_files:
+            try:
+                os.remove(f"../{file}")
+            except FileNotFoundError:
+                pass
+    
     def print_summary(self):
         """Print test summary"""
         total_tests = len(self.results)
@@ -446,6 +554,7 @@ class CLITester:
         self.test_component_flags()
         self.test_output_formats()
         self.test_export_functionality()
+        self.test_custom_path_export()
         self.test_process_monitoring()
         self.test_benchmark_functionality()
         self.test_error_handling()
@@ -489,6 +598,18 @@ class CLITester:
         print(f"{Colors.BOLD}📊 Running Dashboard Test Only{Colors.END}\n")
         self.test_dashboard()
         return self.print_summary()
+    
+    def run_internet_speed_test(self):
+        """Run only internet speed test"""
+        print(f"{Colors.BOLD}🌐 Running Internet Speed Test Only{Colors.END}\n")
+        self.test_internet_speed()
+        return self.print_summary()
+    
+    def run_custom_path_tests(self):
+        """Run only custom path export tests"""
+        print(f"{Colors.BOLD}📁 Running Custom Path Tests Only{Colors.END}\n")
+        self.test_custom_path_export()
+        return self.print_summary()
 
 def main():
     """Main test runner"""
@@ -499,6 +620,8 @@ def main():
     parser.add_argument("--processes", action="store_true", help="Run process monitoring tests only")
     parser.add_argument("--benchmarks", action="store_true", help="Run benchmark tests only")
     parser.add_argument("--dashboard", action="store_true", help="Test dashboard (interactive)")
+    parser.add_argument("--internet", action="store_true", help="Run internet speed test only")
+    parser.add_argument("--custompath", action="store_true", help="Run custom path export tests only")
     parser.add_argument("--verbose", "-v", action="store_true", help="Verbose output")
     
     args = parser.parse_args()
@@ -519,6 +642,10 @@ def main():
         success = tester.run_benchmark_tests()
     elif args.dashboard:
         success = tester.run_dashboard_test()
+    elif args.internet:
+        success = tester.run_internet_speed_test()
+    elif args.custompath:
+        success = tester.run_custom_path_tests()
     else:
         success = tester.run_all_tests()
     

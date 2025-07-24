@@ -1,15 +1,16 @@
 from datetime import datetime, date
 import json
 
-def export_into_file(function, csv=False, params=(False, None)):
+def export_into_file(function, path=None, csv=False, params=(False, None)):
     '''
     Export the output of a function to a JSON or CSV file.
     
     This utility function takes another function as input, executes it,
-    and writes the output to a file named "statz_export_{date}_{time}.json" or ".csv".
+    and writes the output to a file named "statz_export_{date}_{time}.json" or ".csv" or {path} if specified.
     
     Args:
         function (callable): The function whose output is to be exported.
+        path (str): The path to export to (Defaults to None)
         csv (bool): If True, exports as CSV. If False, exports as JSON. Defaults to False.
         params (tuple): Additional parameters to pass to the function. Put (False, None) if no parameters are needed. Otherwise, put (True, [values, values, values, ...]).
 
@@ -144,64 +145,122 @@ def export_into_file(function, csv=False, params=(False, None)):
             output = function(*params[1])
         else:
             output = function()
-        time = datetime.now().strftime("%H-%M-%S")
         
-        if not csv:
-            # JSON Export
-            path_to_export = f"statz_export_{date.today()}_{time}.json"
-            with open(path_to_export, "w") as f:
-                json.dump(output, f, indent=2)
-        else:
-            # CSV Export
-            path_to_export = f"statz_export_{date.today()}_{time}.csv"
-            with open(path_to_export, "w", newline='') as f:
-                writer = csv_module.writer(f)
-                
-                if isinstance(output, list):
-                    # Check if it's a simple list of dictionaries
-                    if output and all(isinstance(item, dict) for item in output):
-                        # Standard case: list of dictionaries (like process data)
-                        keys = output[0].keys()
-                        writer.writerow(keys)
-                        for item in output:
-                            writer.writerow([str(item.get(key, '')) for key in keys])
-                    else:
-                        # Check if this looks like hardware usage data (list of 5 items with specific structure)
-                        if (len(output) == 5 and 
-                            isinstance(output[0], dict) and  # CPU data
-                            isinstance(output[1], dict) and  # RAM data
-                            isinstance(output[2], list)):    # Disk data
-                            format_hardware_usage_csv(output, writer)
-                        # Check if this looks like system specs data
-                        elif len(output) in [4, 7] and all(isinstance(item, (dict, list)) for item in output):
-                            format_system_specs_csv(output, writer)
+        if not path:
+            time = datetime.now().strftime("%H-%M-%S")
+            
+            if not csv:
+                # JSON Export
+                path_to_export = f"statz_export_{date.today()}_{time}.json"
+                with open(path_to_export, "w") as f:
+                    json.dump(output, f, indent=2)
+            else:
+                # CSV Export
+                path_to_export = f"statz_export_{date.today()}_{time}.csv"
+                with open(path_to_export, "w", newline='') as f:
+                    writer = csv_module.writer(f)
+                    
+                    if isinstance(output, list):
+                        # Check if it's a simple list of dictionaries
+                        if output and all(isinstance(item, dict) for item in output):
+                            # Standard case: list of dictionaries (like process data)
+                            keys = output[0].keys()
+                            writer.writerow(keys)
+                            for item in output:
+                                writer.writerow([str(item.get(key, '')) for key in keys])
                         else:
-                            # Generic complex list with mixed types or nested structures
+                            # Check if this looks like hardware usage data (list of 5 items with specific structure)
+                            if (len(output) == 5 and 
+                                isinstance(output[0], dict) and  # CPU data
+                                isinstance(output[1], dict) and  # RAM data
+                                isinstance(output[2], list)):    # Disk data
+                                format_hardware_usage_csv(output, writer)
+                            # Check if this looks like system specs data
+                            elif len(output) in [4, 7] and all(isinstance(item, (dict, list)) for item in output):
+                                format_system_specs_csv(output, writer)
+                            else:
+                                # Generic complex list with mixed types or nested structures
+                                flattened = flatten_for_csv(output)
+                                writer.writerow(['Key', 'Value'])
+                                for key, value in flattened.items():
+                                    writer.writerow([key, value])
+                    elif isinstance(output, dict):
+                        # Check if this looks like temperature data or other simple key-value dicts
+                        if all(isinstance(v, (int, float, str)) for v in output.values()):
+                            # Simple dictionary - likely temperature or similar sensor data
+                            format_simple_dict_csv(output, writer, 'Sensor')
+                        else:
+                            # Complex dictionary with nested structures
                             flattened = flatten_for_csv(output)
                             writer.writerow(['Key', 'Value'])
                             for key, value in flattened.items():
                                 writer.writerow([key, value])
-                elif isinstance(output, dict):
-                    # Check if this looks like temperature data or other simple key-value dicts
-                    if all(isinstance(v, (int, float, str)) for v in output.values()):
-                        # Simple dictionary - likely temperature or similar sensor data
-                        format_simple_dict_csv(output, writer, 'Sensor')
+                    elif isinstance(output, tuple):
+                        # Tuple - treat as multiple columns in one row
+                        writer.writerow([f'Column_{i+1}' for i in range(len(output))])
+                        writer.writerow([str(item) for item in output])
                     else:
-                        # Complex dictionary with nested structures
-                        flattened = flatten_for_csv(output)
-                        writer.writerow(['Key', 'Value'])
-                        for key, value in flattened.items():
-                            writer.writerow([key, value])
-                elif isinstance(output, tuple):
-                    # Tuple - treat as multiple columns in one row
-                    writer.writerow([f'Column_{i+1}' for i in range(len(output))])
-                    writer.writerow([str(item) for item in output])
-                else:
-                    # Single value or other types
-                    writer.writerow(['Value'])
-                    writer.writerow([str(output)])
-        
-        print(f"Export completed: {path_to_export}")
+                        # Single value or other types
+                        writer.writerow(['Value'])
+                        writer.writerow([str(output)])
+            
+            print(f"Export completed: {path_to_export}")
+        else:
+            if not csv:
+                # JSON Export
+                with open(path, "w") as f:
+                    json.dump(output, f, indent=2)
+            else:
+                # CSV Export
+                with open(path, "w", newline='') as f:
+                    writer = csv_module.writer(f)
+                    
+                    if isinstance(output, list):
+                        # Check if it's a simple list of dictionaries
+                        if output and all(isinstance(item, dict) for item in output):
+                            # Standard case: list of dictionaries (like process data)
+                            keys = output[0].keys()
+                            writer.writerow(keys)
+                            for item in output:
+                                writer.writerow([str(item.get(key, '')) for key in keys])
+                        else:
+                            # Check if this looks like hardware usage data (list of 5 items with specific structure)
+                            if (len(output) == 5 and 
+                                isinstance(output[0], dict) and  # CPU data
+                                isinstance(output[1], dict) and  # RAM data
+                                isinstance(output[2], list)):    # Disk data
+                                format_hardware_usage_csv(output, writer)
+                            # Check if this looks like system specs data
+                            elif len(output) in [4, 7] and all(isinstance(item, (dict, list)) for item in output):
+                                format_system_specs_csv(output, writer)
+                            else:
+                                # Generic complex list with mixed types or nested structures
+                                flattened = flatten_for_csv(output)
+                                writer.writerow(['Key', 'Value'])
+                                for key, value in flattened.items():
+                                    writer.writerow([key, value])
+                    elif isinstance(output, dict):
+                        # Check if this looks like temperature data or other simple key-value dicts
+                        if all(isinstance(v, (int, float, str)) for v in output.values()):
+                            # Simple dictionary - likely temperature or similar sensor data
+                            format_simple_dict_csv(output, writer, 'Sensor')
+                        else:
+                            # Complex dictionary with nested structures
+                            flattened = flatten_for_csv(output)
+                            writer.writerow(['Key', 'Value'])
+                            for key, value in flattened.items():
+                                writer.writerow([key, value])
+                    elif isinstance(output, tuple):
+                        # Tuple - treat as multiple columns in one row
+                        writer.writerow([f'Column_{i+1}' for i in range(len(output))])
+                        writer.writerow([str(item) for item in output])
+                    else:
+                        # Single value or other types
+                        writer.writerow(['Value'])
+                        writer.writerow([str(output)])
+            
+            print(f"Export completed: {path}")
+
         
     except Exception as e:
         print(f"Error exporting to file: {e}")

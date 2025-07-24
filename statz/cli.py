@@ -757,6 +757,7 @@ def main():
     parser.add_argument("--out", action="store_true", help="Write specs/usage into a JSON file")
     parser.add_argument("--csv", action="store_true", help="Write specs/usage into a CSV file")
     parser.add_argument("--table", action="store_true", help="Output specs/usage as a table")
+    parser.add_argument("--path", type=str, help="Specify custom export path (works with --out and --csv)")
 
     parser.add_argument("--process-count", type=int, default=5, help="Number of top processes to show (default: 5)")
     parser.add_argument("--process-type", choices=["cpu", "mem"], default="cpu", help="Sort processes by CPU or memory usage (default: cpu)")
@@ -800,7 +801,7 @@ def main():
     elif args.temp and not args.specs and not args.usage and not args.processes:
         # Handle standalone temperature command
         try:
-            specsOrUsage = {"temperature": stats.get_system_temps()}
+            specsOrUsage = {"temperature": get_system_temps()}
             if not specsOrUsage["temperature"]:
                 specsOrUsage["temperature"] = {"error": "Temperature information not available on this system"}
         except Exception as e:
@@ -902,62 +903,85 @@ def main():
             output = specsOrUsage
         print(json.dumps(output, indent=2))
     elif args.out:
-        print("exporting specs/usage into a file...")
+        if args.path:
+            print(f"exporting specs/usage into a JSON file at: {args.path}")
+        else:
+            print("exporting specs/usage into a file...")
         
-        time = datetime.now().strftime("%H-%M-%S")
-        path_to_export = f"statz_export_{date.today()}_{time}.json"
-        with open(path_to_export, "x") as f:
-            if isinstance(specsOrUsage, tuple):
-                # Handle tuple format (full system specs)
-                if len(specsOrUsage) == 4:
-                    # macOS/Linux format
-                    output = {
-                        "os": specsOrUsage[0],
-                        "cpu": specsOrUsage[1],
-                        "memory": specsOrUsage[2],
-                        "disk": specsOrUsage[3]
-                    }
-                elif len(specsOrUsage) == 5:
-                    # Usage format
-                    output = {
-                        "cpu": specsOrUsage[0],
-                        "memory": specsOrUsage[1],
-                        "disk": specsOrUsage[2],
-                        "network": specsOrUsage[3],
-                        "battery": specsOrUsage[4]
-                    }
-                elif len(specsOrUsage) == 6:
-                    # Windows format (old)
-                    output = {
-                        "cpu": specsOrUsage[0],
-                        "gpu": specsOrUsage[1],
-                        "memory": specsOrUsage[2],
-                        "disk": specsOrUsage[3],
-                        "network": specsOrUsage[4],
-                        "battery": specsOrUsage[5]
-                    }
-                elif len(specsOrUsage) == 7:
-                    # Windows format (new with OS info)
-                    output = {
-                        "os": specsOrUsage[0],
-                        "cpu": specsOrUsage[1],
-                        "gpu": specsOrUsage[2],
-                        "memory": specsOrUsage[3],
-                        "disk": specsOrUsage[4],
-                        "network": specsOrUsage[5],
-                        "battery": specsOrUsage[6]
-                    }
-                else:
-                    output = specsOrUsage
-                f.write(json.dumps(output, indent=2))
+        # Use custom path if provided, otherwise use default naming
+        if args.path:
+            # Ensure the path has .json extension
+            if not args.path.endswith('.json'):
+                path_to_export = f"{args.path}.json"
             else:
-                # Handle dictionary format (component-specific data)
-                output = specsOrUsage
-                f.write(json.dumps(output, indent=2))
+                path_to_export = args.path
+        else:
+            # Default naming
+            time = datetime.now().strftime("%H-%M-%S")
+            path_to_export = f"statz_export_{date.today()}_{time}.json"
+        
+        try:
+            with open(path_to_export, "x") as f:
+                if isinstance(specsOrUsage, tuple):
+                    # Handle tuple format (full system specs)
+                    if len(specsOrUsage) == 4:
+                        # macOS/Linux format
+                        output = {
+                            "os": specsOrUsage[0],
+                            "cpu": specsOrUsage[1],
+                            "memory": specsOrUsage[2],
+                            "disk": specsOrUsage[3]
+                        }
+                    elif len(specsOrUsage) == 5:
+                        # Usage format
+                        output = {
+                            "cpu": specsOrUsage[0],
+                            "memory": specsOrUsage[1],
+                            "disk": specsOrUsage[2],
+                            "network": specsOrUsage[3],
+                            "battery": specsOrUsage[4]
+                        }
+                    elif len(specsOrUsage) == 6:
+                        # Windows format (old)
+                        output = {
+                            "cpu": specsOrUsage[0],
+                            "gpu": specsOrUsage[1],
+                            "memory": specsOrUsage[2],
+                            "disk": specsOrUsage[3],
+                            "network": specsOrUsage[4],
+                            "battery": specsOrUsage[5]
+                        }
+                    elif len(specsOrUsage) == 7:
+                        # Windows format (new with OS info)
+                        output = {
+                            "os": specsOrUsage[0],
+                            "cpu": specsOrUsage[1],
+                            "gpu": specsOrUsage[2],
+                            "memory": specsOrUsage[3],
+                            "disk": specsOrUsage[4],
+                            "network": specsOrUsage[5],
+                            "battery": specsOrUsage[6]
+                        }
+                    else:
+                        output = specsOrUsage
+                    f.write(json.dumps(output, indent=2))
+                else:
+                    # Handle dictionary format (component-specific data)
+                    output = specsOrUsage
+                    f.write(json.dumps(output, indent=2))
 
-        print("export complete!")
+            print(f"export complete! File saved to: {path_to_export}")
+        except FileExistsError:
+            print(f"{Fore.RED}Error: File '{path_to_export}' already exists. Please choose a different path or remove the existing file.{Style.RESET_ALL}")
+        except PermissionError:
+            print(f"{Fore.RED}Error: Permission denied when writing to '{path_to_export}'. Please check file permissions or choose a different path.{Style.RESET_ALL}")
+        except OSError as e:
+            print(f"{Fore.RED}Error: Could not write to '{path_to_export}': {str(e)}{Style.RESET_ALL}")
     elif args.csv:
-        print("exporting specs/usage into a CSV file...")
+        if args.path:
+            print(f"exporting specs/usage into a CSV file at: {args.path}")
+        else:
+            print("exporting specs/usage into a CSV file...")
         
         # Determine which export function to use based on the command
         if args.benchmark and not args.specs and not args.usage and not args.temp and not args.processes and not args.health:
@@ -983,7 +1007,19 @@ def main():
             export_func = lambda: specsOrUsage
         
         # Use the stats export function for CSV
-        export_into_file(export_func, csv=True, params=(False, None))
+        # Use custom path if provided
+        custom_path = None
+        if args.path:
+            # Ensure the path has .csv extension for CSV export
+            if not args.path.endswith('.csv'):
+                custom_path = f"{args.path}.csv"
+            else:
+                custom_path = args.path
+        
+        try:
+            export_into_file(export_func, path=custom_path, csv=True, params=(False, None))
+        except Exception as e:
+            print(f"{Fore.RED}Error during CSV export: {str(e)}{Style.RESET_ALL}")
     elif args.table:
         # Handle table output format
         if isinstance(specsOrUsage, (tuple, list)):
@@ -1181,7 +1217,7 @@ def create_export_function_for_processes(args):
 
 def create_export_function_for_temps():
     """Create a function that can be used with export_into_file for temperature data."""
-    return stats.get_system_temps
+    return get_system_temps
 
 def create_export_function_for_health():
     """Create a function that can be used with export_into_file for health data."""
