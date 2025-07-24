@@ -17,7 +17,8 @@ dependencies = [
   "psutil",
   "wmi",
   "colorama",
-  "rich"
+  "rich",
+  "speedtest-cli"
 ]
 classifiers = [
   "Programming Language :: Python :: 3",

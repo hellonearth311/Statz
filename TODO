@@ -1,11 +1,3 @@
-Version 2.1.0
-- 🕛 Top process monitoring in dashboard ✅
-- 🔍 Compare against JSON / CSV file (currently does not support cross-file type comparision) ✅
-- 🔒 Put internal files inside an internal folder so it's harder to access them ✅
-- 🛠️ Fix broken CLI for statz --specs and statz --usage with no other args and benchmarks ✅
-- 🐛 Fix bad error handling for functions ✅
-- Move file exporting and comparision to a different file ✅
-
 Version 2.2.0
 - 🌐 Internet speed test (ping and down/up speed)
 - ☁️ Upload data to cloud
@@ -14,7 +6,7 @@ Version 2.2.0
 Version 2.3.0
 - 🎮 Get GPU usage on Windows by writing a C script
 - 🔌 Connected devices monitoring (connect an Arduino or FPGA to monitor it)
-- Add comparing to the CLI
+- 🔎 Add comparing to the CLI
 
 Version 3.0.0
 - 🤖 Predict system failure with AI / ML
@@ -24,3 +16,8 @@ Version 3.0.0
 Version 3.1.0
 - 🛡️ Detect malicious processes with AI / ML
 - 🏋️ Create custom benchmarks with AI / ML
+
+
+random stuff to do whenever
+- make a changelog.md file with all of the previous versions and their changelogs
+- move the testing to a different folder so i can test it as if it was on someone elses computer
