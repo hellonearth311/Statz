@@ -1,12 +1,10 @@
-Version 2.2.0
-- 🌐 Internet speed test (ping and down/up speed) ✅
-- ⚙️ Choose path for exports (--path argument or specify path in export_into_file function) ✅
-- 🌡️ Fix --temps not working ✅
-
 Version 2.3.0
 - 🎮 Get GPU usage on Windows by writing a C script
 - 🔌 Connected devices monitoring (connect an Arduino or FPGA to monitor it)
 - 🔎 Add comparing to the CLI
+
+Version 2.4.0
+- ⚙️ Full rewrite of specs and usage functions to use C instead of slow WMI/psutil/terminal commands
 
 Version 3.0.0
 - 🤖 Predict system failure with AI / ML
@@ -20,4 +18,3 @@ Version 3.1.0
 
 random stuff to do whenever
 - make a changelog.md file with all of the previous versions and their changelogs
-- move the testing to a different folder so i can test it as if it was on someone elses computer
