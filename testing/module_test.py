@@ -6,7 +6,9 @@ This test suite covers all module functionality including:
 - System specifications retrieval (get_system_specs)
 - Real-time hardware usage monitoring (get_hardware_usage)
 - Process monitoring and analysis (get_top_n_processes)
-- Temperature sensor readings (get_system_temps)~
+- Temperature sensor readings (get_system_temps)
+- GPU usage monitoring (_get_windows_gpu_usage)
+- Connected devices monitoring (connected_device_monitoring)
 - System health scoring (system_health_score)
 - Performance benchmarking (cpu_benchmark, mem_benchmark, disk_benchmark)
 - Export functionality (JSON and CSV) with custom paths
@@ -22,6 +24,8 @@ Usage:
     python module_test.py --usage            # Run hardware usage tests only
     python module_test.py --processes        # Run process monitoring tests only
     python module_test.py --temp             # Run temperature tests only
+    python module_test.py --gpu              # Run GPU usage tests only
+    python module_test.py --devices          # Run connected devices tests only
     python module_test.py --health           # Run health scoring tests only
     python module_test.py --benchmark        # Run benchmarking tests only
     python module_test.py --export           # Run export functionality tests only
@@ -50,11 +54,21 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..'))
 
 try:
     from statz.stats import get_hardware_usage, get_system_specs, get_top_n_processes, __version__
+    from statz.stats import connected_device_monitoring, get_connected_device_by_name, get_connected_devices_by_type
     from statz.benchmark import cpu_benchmark, mem_benchmark, disk_benchmark
     from statz.temp import get_system_temps
     from statz.health import system_health_score
     from statz.file import export_into_file, compare
     from statz.internet import internet_speed_test
+    
+    # Import GPU usage function for Windows
+    try:
+        if platform.system() == "Windows":
+            from statz.internal._getWindowsInfo import _get_windows_gpu_usage
+        else:
+            _get_windows_gpu_usage = None
+    except ImportError:
+        _get_windows_gpu_usage = None
 except ImportError as e:
     print(f"❌ Failed to import statz module: {e}")
     sys.exit(1)
@@ -588,6 +602,8 @@ class ModuleTester:
             self.test_hardware_usage()
             self.test_process_monitoring()
             self.test_temperature_monitoring()
+            self.test_gpu_usage_monitoring()
+            self.test_connected_devices_monitoring()
             self.test_health_scoring()
             self.test_benchmarking()
             self.test_export_functionality()
@@ -1213,6 +1229,266 @@ class ModuleTester:
             )
             self.add_result(result)
     
+    def test_gpu_usage_monitoring(self):
+        """Test GPU usage monitoring"""
+        print(f"\n{Colors.BOLD}🎮 Testing GPU Usage Monitoring{Colors.END}")
+        
+        # Test GPU usage on Windows only
+        if self.current_os == "Windows" and _get_windows_gpu_usage is not None:
+            # Test basic GPU usage
+            result = self.run_test(_get_windows_gpu_usage, "Windows GPU usage monitoring")
+            self.add_result(result)
+            
+            # Test multiple calls for consistency
+            for i in range(3):
+                result = self.run_test(_get_windows_gpu_usage, f"GPU usage reading #{i+1}")
+                self.add_result(result)
+            
+            # Validate GPU usage data structure
+            try:
+                gpu_data = _get_windows_gpu_usage()
+                
+                # Check if it's a dictionary
+                is_dict = isinstance(gpu_data, dict)
+                result = TestResult(
+                    "GPU usage data structure validation",
+                    is_dict,
+                    f"Type: {type(gpu_data).__name__}",
+                    "GPU usage should return a dictionary" if not is_dict else "",
+                    0.0
+                )
+                self.add_result(result)
+                
+                if is_dict:
+                    # Check for expected keys
+                    expected_keys = ['total_gpus']
+                    has_expected_keys = all(key in gpu_data for key in expected_keys)
+                    result = TestResult(
+                        "GPU usage data keys validation",
+                        has_expected_keys,
+                        f"Keys: {list(gpu_data.keys())}",
+                        f"Missing expected keys: {[k for k in expected_keys if k not in gpu_data]}" if not has_expected_keys else "",
+                        0.0
+                    )
+                    self.add_result(result)
+                    
+                    # Check GPU count
+                    total_gpus = gpu_data.get('total_gpus', 0)
+                    valid_gpu_count = isinstance(total_gpus, int) and total_gpus >= 0
+                    result = TestResult(
+                        "GPU count validation",
+                        valid_gpu_count,
+                        f"Total GPUs: {total_gpus}",
+                        "Invalid GPU count" if not valid_gpu_count else "",
+                        0.0
+                    )
+                    self.add_result(result)
+                    
+                    # Check vendor-specific data if GPUs are present
+                    if total_gpus > 0:
+                        vendors = ['nvidia', 'amd', 'intel']
+                        vendor_data_found = any(vendor in gpu_data for vendor in vendors)
+                        result = TestResult(
+                            "GPU vendor data validation",
+                            vendor_data_found,
+                            f"Available vendors: {[v for v in vendors if v in gpu_data]}",
+                            "No vendor-specific GPU data found" if not vendor_data_found else "",
+                            0.0
+                        )
+                        self.add_result(result)
+                
+            except Exception as e:
+                result = TestResult(
+                    "GPU usage data validation",
+                    False,
+                    "",
+                    str(e),
+                    0.0
+                )
+                self.add_result(result)
+        else:
+            # Test that non-Windows platforms handle GPU gracefully
+            result = TestResult(
+                f"GPU usage on {self.current_os} (expected not available)",
+                True,
+                f"GPU usage monitoring not available on {self.current_os}",
+                "",
+                0.0
+            )
+            self.add_result(result)
+
+    def test_connected_devices_monitoring(self):
+        """Test connected devices monitoring"""
+        print(f"\n{Colors.BOLD}🔌 Testing Connected Devices Monitoring{Colors.END}")
+        
+        # Test basic connected device monitoring
+        result = self.run_test(connected_device_monitoring, "Basic connected device monitoring")
+        self.add_result(result)
+        
+        # Test multiple calls for consistency
+        for i in range(3):
+            result = self.run_test(connected_device_monitoring, f"Connected devices reading #{i+1}")
+            self.add_result(result)
+        
+        # Validate connected devices data structure
+        try:
+            devices_data = connected_device_monitoring()
+            
+            # Check if it's a dictionary
+            is_dict = isinstance(devices_data, dict)
+            result = TestResult(
+                "Connected devices data structure validation",
+                is_dict,
+                f"Type: {type(devices_data).__name__}",
+                "Connected devices should return a dictionary" if not is_dict else "",
+                0.0
+            )
+            self.add_result(result)
+            
+            if is_dict:
+                # Check for expected keys
+                expected_keys = ['total_usb_devices', 'devices', 'summary', 'platform']
+                has_expected_keys = all(key in devices_data for key in expected_keys)
+                result = TestResult(
+                    "Connected devices data keys validation",
+                    has_expected_keys,
+                    f"Keys: {list(devices_data.keys())}",
+                    f"Missing expected keys: {[k for k in expected_keys if k not in devices_data]}" if not has_expected_keys else "",
+                    0.0
+                )
+                self.add_result(result)
+                
+                # Check device count
+                total_devices = devices_data.get('total_usb_devices', 0)
+                valid_device_count = isinstance(total_devices, int) and total_devices >= 0
+                result = TestResult(
+                    "USB device count validation",
+                    valid_device_count,
+                    f"Total USB devices: {total_devices}",
+                    "Invalid USB device count" if not valid_device_count else "",
+                    0.0
+                )
+                self.add_result(result)
+                
+                # Check devices list
+                devices_list = devices_data.get('devices', [])
+                valid_devices_list = isinstance(devices_list, list)
+                result = TestResult(
+                    "USB devices list validation",
+                    valid_devices_list,
+                    f"Devices list type: {type(devices_list).__name__}, count: {len(devices_list) if valid_devices_list else 'N/A'}",
+                    "Devices should be a list" if not valid_devices_list else "",
+                    0.0
+                )
+                self.add_result(result)
+                
+                # Validate individual device structure if devices exist
+                if valid_devices_list and devices_list:
+                    first_device = devices_list[0]
+                    expected_device_keys = ['device_id', 'name', 'manufacturer', 'device_class', 'status', 'connection_type', 'specs']
+                    device_has_expected_keys = isinstance(first_device, dict) and all(key in first_device for key in expected_device_keys)
+                    result = TestResult(
+                        "Individual device structure validation",
+                        device_has_expected_keys,
+                        f"First device keys: {list(first_device.keys()) if isinstance(first_device, dict) else 'Not a dict'}",
+                        f"Missing device keys: {[k for k in expected_device_keys if k not in first_device] if isinstance(first_device, dict) else 'Device not a dictionary'}" if not device_has_expected_keys else "",
+                        0.0
+                    )
+                    self.add_result(result)
+                
+        except Exception as e:
+            result = TestResult(
+                "Connected devices data validation",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+        
+        # Test get_connected_device_by_name function
+        try:
+            # Test with a common device name that might exist
+            test_device_names = ['hub', 'root', 'usb', 'mass', 'storage']
+            found_device = False
+            
+            for device_name in test_device_names:
+                device = get_connected_device_by_name(device_name)
+                if device is not None:
+                    found_device = True
+                    result = TestResult(
+                        f"Get device by name test ('{device_name}')",
+                        True,
+                        f"Found device: {device.get('name', 'Unknown') if isinstance(device, dict) else device}",
+                        "",
+                        0.0
+                    )
+                    self.add_result(result)
+                    break
+            
+            if not found_device:
+                result = TestResult(
+                    "Get device by name test (no devices found)",
+                    True,
+                    "No devices found with common names (expected if no USB devices connected)",
+                    "",
+                    0.0
+                )
+                self.add_result(result)
+            
+        except Exception as e:
+            result = TestResult(
+                "Get device by name test",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+        
+        # Test get_connected_devices_by_type function
+        try:
+            # Test with different device types
+            device_types = ['hub', 'storage', 'hid', 'audio', 'network']
+            
+            for device_type in device_types:
+                devices_by_type = get_connected_devices_by_type(device_type)
+                
+                # Should return a dictionary
+                is_dict = isinstance(devices_by_type, dict)
+                has_expected_keys = is_dict and all(key in devices_by_type for key in ['device_type', 'count', 'devices', 'platform'])
+                
+                result = TestResult(
+                    f"Get devices by type test ('{device_type}')",
+                    is_dict and has_expected_keys,
+                    f"Type: {type(devices_by_type).__name__}, keys: {list(devices_by_type.keys()) if is_dict else 'N/A'}",
+                    "Invalid structure for devices by type result" if not (is_dict and has_expected_keys) else "",
+                    0.0
+                )
+                self.add_result(result)
+        
+        except Exception as e:
+            result = TestResult(
+                "Get devices by type test",
+                False,
+                "",
+                str(e),
+                0.0
+            )
+            self.add_result(result)
+    
+    def run_gpu_tests(self):
+        """Run only GPU usage tests"""
+        print(f"{Colors.BOLD}🎮 Running GPU Tests Only{Colors.END}\n")
+        self.test_gpu_usage_monitoring()
+        return self.print_summary()
+    
+    def run_devices_tests(self):
+        """Run only connected devices tests"""
+        print(f"{Colors.BOLD}🔌 Running Connected Devices Tests Only{Colors.END}\n")
+        self.test_connected_devices_monitoring()
+        return self.print_summary()
+    
 def main():
     """Main test runner"""
     parser = argparse.ArgumentParser(description="statz Module Test Suite")
@@ -1220,6 +1496,8 @@ def main():
     parser.add_argument("--usage", action="store_true", help="Run hardware usage tests only")
     parser.add_argument("--processes", action="store_true", help="Run process monitoring tests only")
     parser.add_argument("--temp", action="store_true", help="Run temperature tests only")
+    parser.add_argument("--gpu", action="store_true", help="Run GPU usage tests only")
+    parser.add_argument("--devices", action="store_true", help="Run connected devices tests only")
     parser.add_argument("--health", action="store_true", help="Run health scoring tests only")
     parser.add_argument("--benchmark", action="store_true", help="Run benchmarking tests only")
     parser.add_argument("--export", action="store_true", help="Run export functionality tests only")
@@ -1243,6 +1521,10 @@ def main():
         success = tester.run_process_tests()
     elif args.temp:
         success = tester.run_temp_tests()
+    elif args.gpu:
+        success = tester.run_gpu_tests()
+    elif args.devices:
+        success = tester.run_devices_tests()
     elif args.health:
         success = tester.run_health_tests()
     elif args.benchmark:

@@ -183,6 +183,9 @@ statz --usage --processes --out
 | `--process-count N` | Number of processes to show (default: 5) |
 | `--process-type {cpu,mem}` | Sort processes by CPU or memory usage |
 | `--internetspeedtest` | Run an internet speed test |
+| `--compare`| Compare 2 files (you need to run --path1 and --path2 for this to work) |
+| `--path1`| Path 1 for the compare parameter |
+| `--path2`| Path 2 for the compare parameter |
 
 ### Examples
 
@@ -231,6 +234,9 @@ statz --dashboard
 
 # Test internet speed
 statz --internetspeedtest
+
+# Compare 2 files (note that the 2 file types MUST match)
+statz --compare --path1 path/to/specsorusage1.json or csv --path2 path/to/specsorusage2.json or csv
 ```
 ## 🔗 Links
 [PyPi Project 🐍](https://pypi.org/project/statz/)
@@ -463,19 +469,27 @@ results = internet_speed_test()
 print(f"Download Speed (Mbps): {results[0]}, Upload Speed (Mbps): {results[1]}, Ping (ms): {results[2]}")
 ```
 
+### Connected Device Monitoring
+```python
+from statz.stats import connected_device_monitoring
+
+devices = connected_device_monitoring()
+print(devices)
+
+```
 
 ## 📝 Changelog
 
-### [v2.2.0 – File Path Choosing ⚙️](https://github.com/hellonearth311/Statz/releases/tag/v2.1.0)
+### [v2.3.0 – GPU Usage and Connected Devices 🔌](https://github.com/hellonearth311/Statz/releases/tag/v2.3.0)
 
-### 📄 Choose the path of an export
-- You can now choose the export of a file via the ```--path {path}``` flag or by specifying ```path={path}``` inside the ```statz.file.export_into_file()``` function
+### ⚙️ GPU Usage
+- You can now get GPU usage on Windows via some small code snippets I wrote in C. It works 50% of the time though, so I wouldn't recommend relying on it.
 
-### 🌐 Internet Speed Test
-- Run an internet speed test via the ```--internetspeedtest``` flag to get the upload and download speed in Mbps and the ping in ms, or call the ```statz.internet.internet_speed_test(round=True/False)``` function to get a tuple: ```(download_speed, upload_speed, ping)```
+### 🔌 Connected Devices Monitoring
+- Call ```statz.stats.connected_device_monitoring()``` to get all of the devices that are connected via USB, BT, PS2, etc.
 
-### 🐞 Fixed temperature bug in CLI
-- Fixed the broken temperature monitoring in the CLI
+### 🔎 Comparing in CLI
+- You can now compare files in the CLI with this syntax: ```statz --compare --path1 path1.json/csv --path2 path2.json/csv```
 
 
 ## 📝 Side Note

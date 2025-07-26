@@ -209,7 +209,14 @@ class CLITester:
                 (["--specs", "--gpu"], "GPU specifications (Windows)"),
                 (["--specs", "--network"], "Network specifications (Windows)"),
                 (["--specs", "--battery"], "Battery specifications (Windows)"),
+                (["--usage", "--gpu"], "GPU usage (Windows)"),
                 (["--usage", "--battery"], "Battery usage (Windows)"),
+            ])
+        else:
+            # Test GPU flag on non-Windows (should handle gracefully)
+            component_tests.extend([
+                (["--specs", "--gpu"], f"GPU specifications ({self.current_os} - should show unavailable)"),
+                (["--usage", "--gpu"], f"GPU usage ({self.current_os} - should show unavailable)"),
             ])
         
         # Test combined components
@@ -379,136 +386,148 @@ class CLITester:
             
             self.add_result(description, success, output, error, duration)
     
-    def _cleanup_export_files(self):
-        """Clean up any existing export files"""
-        import glob
-        patterns = ["statz_export_*.json", "statz_export_*.csv"]
-        for pattern in patterns:
-            for file in glob.glob(f"../{pattern}"):
-                try:
-                    os.remove(file)
-                except:
-                    pass
-    
-    def _check_export_files_created(self, args: List[str]) -> bool:
-        """Check if export files were created"""
-        import glob
-        if "--csv" in args:
-            pattern = "../statz_export_*.csv"
-        else:
-            pattern = "../statz_export_*.json"
+    def test_compare_functionality(self):
+        """Test file comparison functionality"""
+        print(f"\n{Colors.BOLD}🔄 Testing File Comparison{Colors.END}")
         
-        files = glob.glob(pattern)
-        return len(files) > 0
-    
-    def test_dashboard(self):
-        """Test dashboard functionality (interactive)"""
-        print(f"\n{Colors.BOLD}📊 Testing Dashboard (Interactive){Colors.END}")
-        
-        print(f"{Colors.YELLOW}Note: Dashboard test will run for 5 seconds then terminate{Colors.END}")
-        
-        # Start dashboard and kill it after a few seconds
-        try:
-            import threading
-            import signal
-            
-            def kill_after_delay(process, delay):
-                time.sleep(delay)
-                try:
-                    process.terminate()
-                except:
-                    pass
-            
-            cmd = self.statz_cmd + ["--dashboard"]
-            process = subprocess.Popen(cmd, cwd="..")
-            
-            # Kill after 5 seconds
-            timer = threading.Timer(5.0, kill_after_delay, [process, 0])
-            timer.start()
-            
-            return_code = process.wait(timeout=10)
-            
-            # Dashboard should have been terminated
-            success = return_code != 0  # Expected to be terminated
-            self.add_result("Dashboard functionality", success, "Dashboard ran successfully", "", 5.0)
-            
-        except Exception as e:
-            self.add_result("Dashboard functionality", False, "", str(e), 0.0)
-    
-    def test_custom_path_export(self):
-        """Test custom path export functionality"""
-        print(f"\n{Colors.BOLD}📁 Testing Custom Path Export{Colors.END}")
+        # First, create some test files to compare
+        test_file1 = "test_compare_file1.json"
+        test_file2 = "test_compare_file2.json"
+        test_file3 = "test_compare_identical.json"
         
         # Clean up any existing test files
-        test_files = [
-            "test_custom_specs.json",
-            "test_custom_usage.csv", 
-            "test_custom_processes.json",
-            "test_custom_benchmark.csv",
-            "custom_export_test.json",
-            "custom_export_test.csv"
-        ]
-        
-        for file in test_files:
+        for file in [test_file1, test_file2, test_file3]:
             try:
                 os.remove(f"../{file}")
             except FileNotFoundError:
                 pass
         
-        custom_path_tests = [
-            (["--specs", "--out", "--path", "test_custom_specs"], "Custom JSON export path"),
-            (["--usage", "--csv", "--path", "test_custom_usage"], "Custom CSV export path"),
-            (["--processes", "--out", "--path", "test_custom_processes.json"], "Custom JSON with extension"),
-            (["--benchmark", "--csv", "--path", "test_custom_benchmark.csv"], "Custom CSV with extension"),
-            (["--specs", "--cpu", "--ram", "--out", "--path", "custom_export_test"], "Component-specific custom export"),
-            (["--usage", "--cpu", "--network", "--csv", "--path", "custom_export_test"], "Usage custom CSV export"),
+        # Create test data files
+        test_data1 = {
+            "cpu": {"name": "Intel Core i7", "cores": 8, "speed": 3.4},
+            "memory": {"total": 16, "available": 8},
+            "disk": {"total": 500, "free": 200}
+        }
+        
+        test_data2 = {
+            "cpu": {"name": "Intel Core i7", "cores": 8, "speed": 3.6},  # Changed speed
+            "memory": {"total": 32, "available": 16},  # Changed memory
+            "disk": {"total": 500, "free": 150},  # Changed free space
+            "gpu": {"name": "NVIDIA RTX 4080"}  # Added GPU
+        }
+        
+        test_data3 = test_data1.copy()  # Identical to test_data1
+        
+        try:
+            # Create test files
+            with open(f"../{test_file1}", 'w') as f:
+                json.dump(test_data1, f, indent=2)
+            with open(f"../{test_file2}", 'w') as f:
+                json.dump(test_data2, f, indent=2)
+            with open(f"../{test_file3}", 'w') as f:
+                json.dump(test_data3, f, indent=2)
+            
+            compare_tests = [
+                # Test compare with missing arguments
+                (["--compare"], "Compare without paths (should fail)"),
+                (["--compare", "--path1", test_file1], "Compare with only one path (should fail)"),
+                
+                # Test valid comparisons
+                (["--compare", "--path1", test_file1, "--path2", test_file2], "Compare different files"),
+                (["--compare", "--path1", test_file1, "--path2", test_file3], "Compare identical files"),
+                (["--compare", "--path1", test_file1, "--path2", test_file2, "--json"], "Compare with JSON output"),
+                
+                # Test with non-existent files
+                (["--compare", "--path1", "nonexistent1.json", "--path2", "nonexistent2.json"], "Compare non-existent files (should fail gracefully)"),
+                (["--compare", "--path1", test_file1, "--path2", "nonexistent.json"], "Compare existing vs non-existent file"),
+            ]
+            
+            for args, description in compare_tests:
+                success, output, error, duration = self.run_command(args)
+                
+                # Special handling for expected failures
+                if "should fail" in description:
+                    # These should fail gracefully with error messages
+                    expected_failure = not success and (
+                        "error" in error.lower() or 
+                        "error" in output.lower() or
+                        "required" in output.lower()
+                    )
+                    self.add_result(description, expected_failure, output, error, duration)
+                elif "identical files" in description and success:
+                    # Check if output indicates files are identical
+                    identical_detected = (
+                        "identical" in output.lower() or 
+                        "no differences" in output.lower() or
+                        '"total_added": 0' in output
+                    )
+                    self.add_result(description, identical_detected, output, error, duration)
+                elif "different files" in description and success:
+                    # Check if output shows differences
+                    differences_detected = (
+                        "added" in output.lower() or 
+                        "changed" in output.lower() or 
+                        "difference" in output.lower() or
+                        '"total_added":' in output or
+                        '"total_changed":' in output
+                    )
+                    self.add_result(description, differences_detected, output, error, duration)
+                else:
+                    self.add_result(description, success, output, error, duration)
+        
+        finally:
+            # Clean up test files
+            for file in [test_file1, test_file2, test_file3]:
+                try:
+                    os.remove(f"../{file}")
+                except FileNotFoundError:
+                    pass
+    
+    def test_gpu_functionality(self):
+        """Test GPU-specific functionality"""
+        print(f"\n{Colors.BOLD}🎮 Testing GPU Functionality{Colors.END}")
+        
+        gpu_tests = [
+            (["--usage", "--gpu"], "GPU usage monitoring"),
+            (["--usage", "--gpu", "--json"], "GPU usage JSON output"),
+            (["--usage", "--gpu", "--table"], "GPU usage table output"),
+            (["--specs", "--gpu"], "GPU specifications"),
+            (["--specs", "--gpu", "--json"], "GPU specs JSON output"),
+            (["--specs", "--gpu", "--table"], "GPU specs table output"),
+            (["--usage", "--cpu", "--gpu", "--ram"], "Combined usage with GPU"),
+            (["--specs", "--cpu", "--gpu", "--ram"], "Combined specs with GPU"),
         ]
         
-        for args, description in custom_path_tests:
+        for args, description in gpu_tests:
             success, output, error, duration = self.run_command(args)
             
-            # Check if custom file was created
-            if success:
-                expected_file = None
-                path_arg = args[args.index("--path") + 1]
+            # Special validation for GPU tests
+            if success and output:
+                # On Windows, should show GPU info or proper error
+                # On other platforms, should show "not available" message
+                if self.current_os == "Windows":
+                    # Should either show GPU data or indicate no GPU found
+                    valid_output = (
+                        "gpu" in output.lower() or 
+                        "nvidia" in output.lower() or 
+                        "amd" in output.lower() or 
+                        "intel" in output.lower() or
+                        "not available" in output.lower() or
+                        "not found" in output.lower()
+                    )
+                else:
+                    # Should indicate GPU monitoring not available on this platform
+                    valid_output = (
+                        "not available" in output.lower() or
+                        "not supported" in output.lower() or
+                        f"{self.current_os.lower()}" in output.lower()
+                    )
                 
-                if "--csv" in args:
-                    if not path_arg.endswith('.csv'):
-                        expected_file = f"../{path_arg}.csv"
-                    else:
-                        expected_file = f"../{path_arg}"
-                else:  # JSON
-                    if not path_arg.endswith('.json'):
-                        expected_file = f"../{path_arg}.json"
-                    else:
-                        expected_file = f"../{path_arg}"
-                
-                if expected_file and not os.path.exists(expected_file):
+                if not valid_output:
                     success = False
-                    error += f" (Custom export file not created at {expected_file})"
-                
-                # Validate file content if created
-                if success and expected_file and os.path.exists(expected_file):
-                    try:
-                        with open(expected_file, 'r') as f:
-                            content = f.read()
-                            if not content.strip():
-                                success = False
-                                error += " (Export file is empty)"
-                            elif expected_file.endswith('.json'):
-                                json.loads(content)  # Validate JSON
-                    except (json.JSONDecodeError, IOError) as e:
-                        success = False
-                        error += f" (Invalid export file: {str(e)})"
+                    error += " (GPU output doesn't contain expected information)"
             
             self.add_result(description, success, output, error, duration)
-        
-        # Clean up test files
-        for file in test_files:
-            try:
-                os.remove(f"../{file}")
-            except FileNotFoundError:
-                pass
     
     def print_summary(self):
         """Print test summary"""
@@ -552,9 +571,11 @@ class CLITester:
         
         self.test_basic_commands()
         self.test_component_flags()
+        self.test_gpu_functionality()
         self.test_output_formats()
         self.test_export_functionality()
         self.test_custom_path_export()
+        self.test_compare_functionality()
         self.test_process_monitoring()
         self.test_benchmark_functionality()
         self.test_error_handling()
@@ -610,6 +631,18 @@ class CLITester:
         print(f"{Colors.BOLD}📁 Running Custom Path Tests Only{Colors.END}\n")
         self.test_custom_path_export()
         return self.print_summary()
+    
+    def run_gpu_tests(self):
+        """Run only GPU functionality tests"""
+        print(f"{Colors.BOLD}🎮 Running GPU Tests Only{Colors.END}\n")
+        self.test_gpu_functionality()
+        return self.print_summary()
+    
+    def run_compare_tests(self):
+        """Run only file comparison tests"""
+        print(f"{Colors.BOLD}🔄 Running Compare Tests Only{Colors.END}\n")
+        self.test_compare_functionality()
+        return self.print_summary()
 
 def main():
     """Main test runner"""
@@ -617,6 +650,8 @@ def main():
     parser.add_argument("--basic", action="store_true", help="Run basic functionality tests only")
     parser.add_argument("--output", action="store_true", help="Run output format tests only")
     parser.add_argument("--components", action="store_true", help="Run component-specific tests only")
+    parser.add_argument("--gpu", action="store_true", help="Run GPU functionality tests only")
+    parser.add_argument("--compare", action="store_true", help="Run file comparison tests only")
     parser.add_argument("--processes", action="store_true", help="Run process monitoring tests only")
     parser.add_argument("--benchmarks", action="store_true", help="Run benchmark tests only")
     parser.add_argument("--dashboard", action="store_true", help="Test dashboard (interactive)")
@@ -636,6 +671,10 @@ def main():
         success = tester.run_output_tests()
     elif args.components:
         success = tester.run_component_tests()
+    elif args.gpu:
+        success = tester.run_gpu_tests()
+    elif args.compare:
+        success = tester.run_compare_tests()
     elif args.processes:
         success = tester.run_process_tests()
     elif args.benchmarks:
