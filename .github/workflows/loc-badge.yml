@@ -32,8 +32,9 @@ jobs:
           git config --global user.name "github-actions"
           git config --global user.email "actions@github.com"
 
+          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
+
           git checkout -B badges
           git add loc.csv loc-badge.md
-          git remote set-url origin https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }}
           git commit -m "Update LOC badge" || echo "No changes to commit"
-          git push --force https://x-access-token:${GH_TOKEN}@github.com/${{ github.repository }} badges
+          git push --force origin badges
