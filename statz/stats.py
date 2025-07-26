@@ -126,3 +126,124 @@ def get_top_n_processes(n=5, type="cpu"):
         - Some processes may not be accessible due to permission restrictions
     '''
     return _get_top_n_processes(n, type)
+
+def connected_device_monitoring():
+    """
+    Get information on connected USB devices across all platforms.
+    
+    This function provides comprehensive information about USB-connected devices
+    including specifications, device types, and connection details.
+    
+    Returns:
+        dict: Dictionary containing connected device information with the following structure:
+        {
+            'total_usb_devices': int,
+            'devices': [list of device dictionaries],
+            'summary': {
+                'hubs': int,
+                'storage_devices': int,
+                'input_devices': int,
+                'audio_devices': int,
+                'network_devices': int,
+                'other_devices': int
+            },
+            'method_used': str,
+            'platform': str
+        }
+        
+        Each device dictionary contains:
+        - device_id: Unique device identifier
+        - name: Human-readable device name
+        - manufacturer: Device manufacturer
+        - device_class: Device class/category
+        - status: Device status
+        - connection_type: Connection type (USB)
+        - specs: Dictionary with detailed specifications including:
+            - vendor_id: USB vendor ID
+            - product_id: USB product ID
+            - interface_version: USB version (1.1, 2.0, 3.0+)
+            - speed: Transfer speed
+            - device_type: Classified device type
+            - function: Device function/purpose
+    
+    Raises:
+        OSError: If the operating system is unsupported.
+        
+    Note:
+        - Windows: Uses WMI and PowerShell for device detection
+        - Linux: Uses lsusb command and sysfs filesystem
+        - macOS: Uses system_profiler command
+    """
+    try:
+        from .internal._connectedDevicesMonitoring import get_connected_usb_devices
+        return get_connected_usb_devices()
+    except ImportError as e:
+        return {
+            'total_usb_devices': 0,
+            'devices': [],
+            'summary': {},
+            'error': f"Connected device monitoring module not available: {str(e)}",
+            'platform': platform.system().lower()
+        }
+    except Exception as e:
+        return {
+            'total_usb_devices': 0,
+            'devices': [],
+            'summary': {},
+            'error': f"Failed to get connected devices: {str(e)}",
+            'platform': platform.system().lower()
+        }
+
+def get_connected_device_by_name(device_name):
+    """
+    Get a specific connected USB device by name.
+    
+    Args:
+        device_name (str): Name or partial name of the device to search for
+        
+    Returns:
+        dict or None: Device information dictionary if found, None otherwise
+    """
+    try:
+        from .internal._connectedDevicesMonitoring import get_device_by_name
+        return get_device_by_name(device_name)
+    except ImportError:
+        return None
+    except Exception:
+        return None
+
+def get_connected_devices_by_type(device_type):
+    """
+    Get connected USB devices filtered by type.
+    
+    Args:
+        device_type (str): Type of devices to filter by (e.g., 'storage', 'hid', 'audio', 'network')
+        
+    Returns:
+        dict: Dictionary containing filtered devices with structure:
+        {
+            'device_type': str,
+            'count': int,
+            'devices': [list of matching devices],
+            'platform': str
+        }
+    """
+    try:
+        from .internal._connectedDevicesMonitoring import get_devices_by_type
+        return get_devices_by_type(device_type)
+    except ImportError:
+        return {
+            'device_type': device_type, 
+            'count': 0, 
+            'devices': [], 
+            'error': 'Connected device monitoring module not available',
+            'platform': platform.system().lower()
+        }
+    except Exception as e:
+        return {
+            'device_type': device_type, 
+            'count': 0, 
+            'devices': [], 
+            'error': str(e),
+            'platform': platform.system().lower()
+        }

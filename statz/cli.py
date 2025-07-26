@@ -2,7 +2,7 @@ from statz import stats
 from statz.benchmark import cpu_benchmark, mem_benchmark, disk_benchmark
 from statz.temp import get_system_temps
 from statz.health import system_health_score
-from statz.file import export_into_file
+from statz.file import export_into_file, compare
 from statz.internet import internet_speed_test
 from datetime import date, datetime
 from colorama import Fore, Style, init
@@ -893,6 +893,11 @@ def main():
     parser.add_argument("--table", action="store_true", help="Output specs/usage as a table")
     parser.add_argument("--path", type=str, help="Specify custom export path (works with --out and --csv)")
 
+    parser.add_argument("--compare", action="store_true", help="Compare 2 JSON or CSV files (need to specify --path1 and --path2)")
+
+    parser.add_argument("--path1", type=str, help="Specify compare path 1 (use --compare first)")
+    parser.add_argument("--path2", type=str, help="Specify compare path 2 (use --compare first)")
+
     parser.add_argument("--process-count", type=int, default=5, help="Number of top processes to show (default: 5)")
     parser.add_argument("--process-type", choices=["cpu", "mem"], default="cpu", help="Sort processes by CPU or memory usage (default: cpu)")
 
@@ -984,6 +989,69 @@ def main():
 
         except Exception as e:
             print(f"{Fore.RED} Error running internet speed test: {e}{Style.RESET_ALL}")
+            return
+    elif args.compare:
+        # Handle file comparison
+        if not args.path1 or not args.path2:
+            print(f"{Fore.RED}Error: Both --path1 and --path2 are required for comparison.{Style.RESET_ALL}")
+            print("Usage: statz --compare --path1 file1.json --path2 file2.json")
+            return
+        
+        try:
+            print(f"Comparing files:")
+            print(f"  File 1: {args.path1}")
+            print(f"  File 2: {args.path2}")
+            print()
+            
+            comparison_result = compare(args.path1, args.path2)
+            
+            if args.json:
+                # Output comparison results as JSON
+                print(json.dumps(comparison_result, indent=2, default=str))
+            else:
+                # Format and display comparison results
+                if 'error' in str(comparison_result.get('added', {})):
+                    print(f"{Fore.RED}Comparison failed: {comparison_result['added']['error']}{Style.RESET_ALL}")
+                    return
+                
+                summary = comparison_result.get('summary', {})
+                print(f"{Fore.CYAN}Comparison Summary:{Style.RESET_ALL}")
+                print(f"  Total Added: {summary.get('total_added', 0)}")
+                print(f"  Total Removed: {summary.get('total_removed', 0)}")
+                print(f"  Total Changed: {summary.get('total_changed', 0)}")
+                
+                # Show added items
+                added = comparison_result.get('added', {})
+                if added and not ('error' in str(added)):
+                    print(f"\n{Fore.GREEN}Added Items:{Style.RESET_ALL}")
+                    for key, value in added.items():
+                        print(f"  + {key}: {value}")
+                
+                # Show removed items
+                removed = comparison_result.get('removed', {})
+                if removed and not ('error' in str(removed)):
+                    print(f"\n{Fore.RED}Removed Items:{Style.RESET_ALL}")
+                    for key, value in removed.items():
+                        print(f"  - {key}: {value}")
+                
+                # Show changed items
+                changed = comparison_result.get('changed', {})
+                if changed and not ('error' in str(changed)):
+                    print(f"\n{Fore.YELLOW}Changed Items:{Style.RESET_ALL}")
+                    for key, values in changed.items():
+                        if isinstance(values, dict) and 'old' in values and 'new' in values:
+                            print(f"  ~ {key}: {values['old']} → {values['new']}")
+                        else:
+                            print(f"  ~ {key}: {values}")
+                
+                # Show if files are identical
+                total_changes = summary.get('total_added', 0) + summary.get('total_removed', 0) + summary.get('total_changed', 0)
+                if total_changes == 0:
+                    print(f"\n{Fore.GREEN}✓ Files are identical{Style.RESET_ALL}")
+            return
+            
+        except Exception as e:
+            print(f"{Fore.RED}Error during file comparison: {str(e)}{Style.RESET_ALL}")
             return
     else:
         parser.print_help()

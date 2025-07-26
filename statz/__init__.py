@@ -35,6 +35,7 @@ from .stats import (
     get_system_specs,
     get_hardware_usage, 
     get_top_n_processes,
+    connected_device_monitoring,
     __version__
 )
 
@@ -57,7 +58,8 @@ __all__ = [
     "compare",
     "__version__",
     "stats",
-    "internet_speed_test"
+    "internet_speed_test",
+    "connected_device_monitoring"
 ]
 
 # Version information
