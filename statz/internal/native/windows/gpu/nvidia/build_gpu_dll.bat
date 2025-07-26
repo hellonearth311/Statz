@@ -1,5 +1,16 @@
 @echo off
-REM Build script for NVIDIA GPU monitoring DLL
+REM REM Create output directory if it doesn't exist
+if not exist "..\..\..\..\bin" mkdir "..\..\..\..\bin"
+
+REM Compile the DLL
+echo Compiling gpu_usage.c to nvidia_gpu_monitor.dll...
+gcc -shared -fPIC -O2 -Wall ^
+    -o ..\..\..\..\bin\nvidia_gpu_monitor.dll ^
+    gpu_usage.c ^
+    -luser32 -lkernel32
+
+if %errorlevel% equ 0 (
+    echo Success! DLL created at: ..\..\..\..\bin\nvidia_gpu_monitor.dll for NVIDIA GPU monitoring DLL
 REM Requires GCC (MinGW-w64) to be installed and in PATH
 
 echo Building NVIDIA GPU monitoring DLL...

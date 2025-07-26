@@ -134,14 +134,13 @@ static int init_performance_counters() {
     // Try to add AMD GPU performance counters
     // These paths may vary depending on AMD driver version
     const char* gpu_counter_paths[] = {
-        "\\GPU Engine(*)\\Utilization Percentage",
-        "\\AMD Graphics\\GPU Utilization",
-        "\\GPU Process Memory(*)\\Dedicated Usage",
-        "\\GPU Engine(engtype_3D)\\Utilization Percentage"
+        "\\GPU Engine(pid_*)\\Utilization Percentage",
+        "\\GPU Engine(engtype_3D*)\\Utilization Percentage",
+        "\\AMD Graphics\\GPU Utilization"
     };
     
     BOOL found_counter = FALSE;
-    for (int i = 0; i < 4; i++) {
+    for (int i = 0; i < 3; i++) {
         status = PdhAddCounterA(query_handle, gpu_counter_paths[i], 0, &gpu_util_counter);
         if (status == ERROR_SUCCESS) {
             found_counter = TRUE;
@@ -169,12 +168,31 @@ static int init_performance_counters() {
         return -2;
     }
     
-    // Collect initial sample
-    PdhCollectQueryData(query_handle);
-    Sleep(100); // Wait a bit for first sample
+    // Collect initial sample and check if we get valid data
+    status = PdhCollectQueryData(query_handle);
+    if (status != ERROR_SUCCESS) {
+        PdhCloseQuery(query_handle);
+        query_handle = NULL;
+        return -3;
+    }
     
-    perf_counters_initialized = TRUE;
-    return 0;
+    Sleep(1000); // Wait for first meaningful sample
+    
+    // Check if we can actually get valid data
+    status = PdhCollectQueryData(query_handle);
+    if (status == ERROR_SUCCESS && gpu_util_counter) {
+        PDH_FMT_COUNTERVALUE counter_value;
+        status = PdhGetFormattedCounterValue(gpu_util_counter, PDH_FMT_DOUBLE, NULL, &counter_value);
+        if (status == ERROR_SUCCESS && counter_value.CStatus == PDH_CSTATUS_VALID_DATA) {
+            perf_counters_initialized = TRUE;
+            return 0;
+        }
+    }
+    
+    // If we can't get valid data, cleanup and fail
+    PdhCloseQuery(query_handle);
+    query_handle = NULL;
+    return -4;
 }
 
 // Unload AGS API
@@ -244,18 +262,54 @@ int gpu_init() {
     // Try AGS API first
     if (load_ags() == 0) {
         if (agsInitialize && agsInitialize(5, NULL, &ags_context, &gpu_info) == AGS_SUCCESS) {
-            ags_initialized = TRUE;
-            printf("AMD AGS API initialized successfully\n");
-            return 0;
+            if (gpu_info.numDevices > 0) {
+                ags_initialized = TRUE;
+                printf("AMD AGS API initialized successfully with %d device(s)\n", gpu_info.numDevices);
+                return 0;
+            } else {
+                // AGS initialized but no AMD devices found
+                agsDeInitialize(ags_context);
+                ags_context = NULL;
+            }
         }
     }
     
-    // Fallback to performance counters
-    if (init_performance_counters() == 0) {
-        printf("Performance counters initialized successfully\n");
+    // Fallback to performance counters only if we detect AMD GPU presence
+    // First check if AMD drivers are installed by looking at registry
+    HKEY hkey;
+    BOOL amd_driver_found = FALSE;
+    
+    // Check for AMD graphics driver in registry
+    const char* amd_registry_paths[] = {
+        "SOFTWARE\\AMD\\Install",
+        "SOFTWARE\\ATI Technologies\\Install",
+        "SYSTEM\\CurrentControlSet\\Control\\Class\\{4d36e968-e325-11ce-bfc1-08002be10318}"
+    };
+    
+    for (int i = 0; i < 3; i++) {
+        if (RegOpenKeyExA(HKEY_LOCAL_MACHINE, amd_registry_paths[i], 0, KEY_READ, &hkey) == ERROR_SUCCESS) {
+            char buffer[256];
+            DWORD buffer_size = sizeof(buffer);
+            
+            // Check various keys that indicate AMD presence
+            if (RegQueryValueExA(hkey, "Provider", NULL, NULL, (LPBYTE)buffer, &buffer_size) == ERROR_SUCCESS) {
+                if (strstr(buffer, "AMD") || strstr(buffer, "ATI")) {
+                    amd_driver_found = TRUE;
+                }
+            }
+            
+            RegCloseKey(hkey);
+            if (amd_driver_found) break;
+        }
+    }
+    
+    // Only try performance counters if we found evidence of AMD drivers
+    if (amd_driver_found && init_performance_counters() == 0) {
+        printf("AMD GPU performance counters initialized successfully\n");
         return 0;
     }
     
+    printf("No AMD GPU or drivers detected\n");
     return -1;
 }
 
@@ -271,8 +325,21 @@ int gpu_get_count() {
         return gpu_info.numDevices;
     }
     
-    // Fallback: assume 1 AMD GPU
-    return 1;
+    // Only return 1 if performance counters are working and we found AMD GPU counters
+    if (perf_counters_initialized) {
+        // Try to check if we actually have AMD performance counters
+        PDH_STATUS status = PdhCollectQueryData(query_handle);
+        if (status == ERROR_SUCCESS && gpu_util_counter) {
+            PDH_FMT_COUNTERVALUE counter_value;
+            status = PdhGetFormattedCounterValue(gpu_util_counter, PDH_FMT_DOUBLE, NULL, &counter_value);
+            if (status == ERROR_SUCCESS && counter_value.CStatus == PDH_CSTATUS_VALID_DATA) {
+                return 1; // We have working AMD GPU performance counters
+            }
+        }
+    }
+    
+    // No AMD GPU detected
+    return 0;
 }
 
 // Get GPU utilization using AGS or performance counters

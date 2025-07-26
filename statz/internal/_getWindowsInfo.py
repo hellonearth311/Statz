@@ -1,4 +1,7 @@
 import subprocess
+import ctypes
+import os
+import json
 try:
     import wmi
 
@@ -346,9 +349,240 @@ try:
         # If all methods fail, return a helpful message instead of None
         return {"error": "Temperature sensors not available or accessible on this Windows system"}
 
+    def _get_windows_gpu_usage():
+        """
+        Get GPU usage information using vendor-specific libraries or WMI fallback
+        
+        Returns:
+            dict: GPU usage information with utilization percentages and memory usage
+        """
+        gpu_data = {
+            "nvidia": None,
+            "amd": None,
+            "intel": None,
+            "total_gpus": 0,
+            "active_gpus": []
+        }
+        
+        # Get the path to the bin directory containing our DLLs
+        current_dir = os.path.dirname(os.path.abspath(__file__))
+        bin_dir = os.path.join(current_dir, "bin")
+        
+        # Try NVIDIA GPU monitoring
+        try:
+            nvidia_dll_path = os.path.join(bin_dir, "nvidia_gpu_monitor.dll")
+            if os.path.exists(nvidia_dll_path):
+                nvidia_dll = ctypes.CDLL(nvidia_dll_path)
+                
+                # Define function signatures
+                nvidia_dll.gpu_init.argtypes = []
+                nvidia_dll.gpu_init.restype = ctypes.c_int
+                
+                nvidia_dll.gpu_get_count.argtypes = []
+                nvidia_dll.gpu_get_count.restype = ctypes.c_int
+                
+                nvidia_dll.gpu_get_usage.argtypes = []
+                nvidia_dll.gpu_get_usage.restype = ctypes.c_int
+                
+                nvidia_dll.gpu_get_info_json.argtypes = []
+                nvidia_dll.gpu_get_info_json.restype = ctypes.c_char_p
+                
+                nvidia_dll.gpu_shutdown.argtypes = []
+                nvidia_dll.gpu_shutdown.restype = None
+                
+                # Initialize and get GPU info
+                if nvidia_dll.gpu_init() == 0:
+                    count = nvidia_dll.gpu_get_count()
+                    if count > 0:
+                        usage = nvidia_dll.gpu_get_usage()
+                        json_info = nvidia_dll.gpu_get_info_json()
+                        
+                        if json_info:
+                            try:
+                                info_str = json_info.decode('utf-8')
+                                detailed_info = json.loads(info_str)
+                                gpu_data["nvidia"] = {
+                                    "count": count,
+                                    "primary_usage": usage,
+                                    "detailed_info": detailed_info
+                                }
+                                gpu_data["total_gpus"] += count
+                                gpu_data["active_gpus"].extend([f"NVIDIA GPU {i}" for i in range(count)])
+                            except (json.JSONDecodeError, UnicodeDecodeError):
+                                gpu_data["nvidia"] = {"count": count, "primary_usage": usage}
+                    
+                    nvidia_dll.gpu_shutdown()
+        except Exception as e:
+            pass  # NVIDIA GPU not available or error occurred
+        
+        # Try AMD GPU monitoring
+        try:
+            amd_dll_path = os.path.join(bin_dir, "amd_gpu_monitor.dll")
+            if os.path.exists(amd_dll_path):
+                amd_dll = ctypes.CDLL(amd_dll_path)
+                
+                # Define function signatures
+                amd_dll.gpu_init.argtypes = []
+                amd_dll.gpu_init.restype = ctypes.c_int
+                
+                amd_dll.gpu_get_count.argtypes = []
+                amd_dll.gpu_get_count.restype = ctypes.c_int
+                
+                amd_dll.gpu_get_usage.argtypes = []
+                amd_dll.gpu_get_usage.restype = ctypes.c_int
+                
+                amd_dll.gpu_get_info_json.argtypes = []
+                amd_dll.gpu_get_info_json.restype = ctypes.c_char_p
+                
+                amd_dll.gpu_shutdown.argtypes = []
+                amd_dll.gpu_shutdown.restype = None
+                
+                # Initialize and get GPU info
+                if amd_dll.gpu_init() == 0:
+                    count = amd_dll.gpu_get_count()
+                    if count > 0:
+                        usage = amd_dll.gpu_get_usage()
+                        json_info = amd_dll.gpu_get_info_json()
+                        
+                        if json_info:
+                            try:
+                                info_str = json_info.decode('utf-8')
+                                detailed_info = json.loads(info_str)
+                                gpu_data["amd"] = {
+                                    "count": count,
+                                    "primary_usage": usage,
+                                    "detailed_info": detailed_info
+                                }
+                                gpu_data["total_gpus"] += count
+                                gpu_data["active_gpus"].extend([f"AMD GPU {i}" for i in range(count)])
+                            except (json.JSONDecodeError, UnicodeDecodeError):
+                                gpu_data["amd"] = {"count": count, "primary_usage": usage}
+                    
+                    amd_dll.gpu_shutdown()
+        except Exception as e:
+            pass  # AMD GPU not available or error occurred
+        
+        # Try Intel GPU monitoring
+        try:
+            intel_dll_path = os.path.join(bin_dir, "intel_gpu_monitor.dll")
+            if os.path.exists(intel_dll_path):
+                intel_dll = ctypes.CDLL(intel_dll_path)
+                
+                # Define function signatures
+                intel_dll.gpu_init.argtypes = []
+                intel_dll.gpu_init.restype = ctypes.c_int
+                
+                intel_dll.gpu_get_count.argtypes = []
+                intel_dll.gpu_get_count.restype = ctypes.c_int
+                
+                intel_dll.gpu_get_usage.argtypes = []
+                intel_dll.gpu_get_usage.restype = ctypes.c_int
+                
+                intel_dll.gpu_get_info_json.argtypes = []
+                intel_dll.gpu_get_info_json.restype = ctypes.c_char_p
+                
+                intel_dll.gpu_shutdown.argtypes = []
+                intel_dll.gpu_shutdown.restype = None
+                
+                # Initialize and get GPU info
+                if intel_dll.gpu_init() == 0:
+                    count = intel_dll.gpu_get_count()
+                    if count > 0:
+                        usage = intel_dll.gpu_get_usage()
+                        json_info = intel_dll.gpu_get_info_json()
+                        
+                        if json_info:
+                            try:
+                                info_str = json_info.decode('utf-8')
+                                detailed_info = json.loads(info_str)
+                                gpu_data["intel"] = {
+                                    "count": count,
+                                    "primary_usage": usage,
+                                    "detailed_info": detailed_info
+                                }
+                                gpu_data["total_gpus"] += count
+                                gpu_data["active_gpus"].extend([f"Intel GPU {i}" for i in range(count)])
+                            except (json.JSONDecodeError, UnicodeDecodeError):
+                                gpu_data["intel"] = {"count": count, "primary_usage": usage}
+                    
+                    intel_dll.gpu_shutdown()
+        except Exception as e:
+            pass  # Intel GPU not available or error occurred
+        
+        # Fallback: Use WMI for basic GPU info if no vendor-specific data was obtained
+        if gpu_data["total_gpus"] == 0:
+            try:
+                c = wmi.WMI()
+                fallback_gpus = []
+                for gpu in c.Win32_VideoController():
+                    if gpu.Name and "microsoft" not in gpu.Name.lower():
+                        fallback_gpus.append({
+                            "name": gpu.Name,
+                            "driver_version": gpu.DriverVersion,
+                            "vram_mb": int(gpu.AdapterRAM) // (1024 ** 2) if gpu.AdapterRAM else 0
+                        })
+                
+                if fallback_gpus:
+                    gpu_data["fallback"] = {
+                        "gpus": fallback_gpus,
+                        "note": "Basic GPU info via WMI - usage monitoring requires vendor drivers"
+                    }
+                    gpu_data["total_gpus"] = len(fallback_gpus)
+                    gpu_data["active_gpus"] = [gpu["name"] for gpu in fallback_gpus]
+            except Exception as e:
+                pass
+        
+        # If still no GPUs found, try Performance Counters as last resort
+        if gpu_data["total_gpus"] == 0:
+            try:
+                import subprocess
+                ps_script = """
+                try {
+                    $counters = Get-Counter "\\GPU Engine(*)\\Utilization Percentage" -ErrorAction SilentlyContinue
+                    if ($counters -and $counters.CounterSamples) {
+                        $usage = ($counters.CounterSamples | Measure-Object -Property CookedValue -Average).Average
+                        Write-Output "GPU_Usage:$([math]::Round($usage, 1))"
+                    }
+                } catch { }
+                """
+                
+                process = subprocess.Popen(['powershell.exe', '-Command', ps_script], 
+                                          stdout=subprocess.PIPE, 
+                                          stderr=subprocess.PIPE,
+                                          text=True, 
+                                          creationflags=subprocess.CREATE_NO_WINDOW)
+                
+                stdout, stderr = process.communicate(timeout=10)
+                
+                if process.returncode == 0 and stdout.strip():
+                    for line in stdout.strip().split('\n'):
+                        if 'GPU_Usage:' in line:
+                            try:
+                                usage_str = line.split(':', 1)[1]
+                                usage = float(usage_str.strip())
+                                gpu_data["performance_counter"] = {
+                                    "average_usage": usage,
+                                    "note": "Generic GPU usage via Performance Counters"
+                                }
+                                gpu_data["total_gpus"] = 1
+                                gpu_data["active_gpus"] = ["Generic GPU"]
+                                break
+                            except (ValueError, IndexError):
+                                continue
+            except Exception as e:
+                pass
+        
+        return gpu_data
+
 except:
     def _get_windows_specs():
         return None, None, None, None, None, None, None
 
     def _get_windows_temps():
+        return None
+    
+    def _get_windows_gpu_usage():
+        return {"error": "GPU monitoring libraries not available"}
+
+    def _get_windows_gpu_usage():
         return None

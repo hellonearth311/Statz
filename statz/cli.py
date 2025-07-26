@@ -15,6 +15,15 @@ import platform
 import json
 import argparse
 
+# Import GPU usage function for Windows
+try:
+    if platform.system() == "Windows":
+        from statz.internal._getWindowsInfo import _get_windows_gpu_usage
+    else:
+        _get_windows_gpu_usage = None
+except ImportError:
+    _get_windows_gpu_usage = None
+
 def create_export_function_for_specs(args):
     """Create a function that can be used with export_into_file for specs data."""
     if any([args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]):
@@ -79,10 +88,74 @@ def format_gpu_data(gpu_data):
     """Format GPU data for display."""
     if isinstance(gpu_data, dict) and "error" in gpu_data:
         return f"{Fore.RED}{gpu_data['error']}{Style.RESET_ALL}"
+    elif isinstance(gpu_data, dict):
+        # Handle new GPU usage format
+        if "nvidia" in gpu_data or "amd" in gpu_data or "intel" in gpu_data:
+            formatted_output = []
+            formatted_output.append(f"Total GPUs: {gpu_data.get('total_gpus', 0)}")
+            
+            if gpu_data.get('active_gpus'):
+                formatted_output.append(f"Active GPUs: {', '.join(gpu_data['active_gpus'])}")
+            
+            # Format vendor-specific data
+            for vendor in ["nvidia", "amd", "intel"]:
+                vendor_data = gpu_data.get(vendor)
+                if vendor_data:
+                    formatted_output.append(f"\n  {vendor.upper()} GPU:")
+                    formatted_output.append(f"    Count: {vendor_data.get('count', 0)}")
+                    
+                    usage = vendor_data.get('primary_usage', 0)
+                    if usage >= 0:
+                        # Color code usage
+                        if usage >= 90:
+                            color = Fore.RED
+                        elif usage >= 70:
+                            color = Fore.YELLOW
+                        else:
+                            color = Fore.GREEN
+                        formatted_output.append(f"    Usage: {color}{usage}%{Style.RESET_ALL}")
+                    
+                    # Display detailed info if available
+                    detailed = vendor_data.get('detailed_info')
+                    if detailed and 'gpus' in detailed:
+                        for i, gpu in enumerate(detailed['gpus']):
+                            formatted_output.append(f"    GPU {i} Details:")
+                            if 'name' in gpu:
+                                formatted_output.append(f"      Name: {gpu['name']}")
+                            if 'memory_utilization' in gpu:
+                                formatted_output.append(f"      Memory Usage: {gpu['memory_utilization']}%")
+                            if 'temperature' in gpu and gpu['temperature'] > 0:
+                                temp = gpu['temperature']
+                                temp_color = Fore.RED if temp > 80 else Fore.YELLOW if temp > 70 else Fore.GREEN
+                                formatted_output.append(f"      Temperature: {temp_color}{temp}°C{Style.RESET_ALL}")
+                            if 'power_usage' in gpu and gpu['power_usage'] > 0:
+                                formatted_output.append(f"      Power: {gpu['power_usage']:.1f}W")
+            
+            # Handle fallback data
+            if gpu_data.get('fallback'):
+                formatted_output.append(f"\n  Fallback GPU Info:")
+                for gpu in gpu_data['fallback'].get('gpus', []):
+                    formatted_output.append(f"    {gpu.get('name', 'Unknown GPU')}")
+                    if gpu.get('vram_mb', 0) > 0:
+                        formatted_output.append(f"      VRAM: {gpu['vram_mb']} MB")
+            
+            if gpu_data.get('performance_counter'):
+                pc_data = gpu_data['performance_counter']
+                usage = pc_data.get('average_usage', 0)
+                color = Fore.RED if usage >= 90 else Fore.YELLOW if usage >= 70 else Fore.GREEN
+                formatted_output.append(f"\n  Generic GPU Usage: {color}{usage:.1f}%{Style.RESET_ALL}")
+            
+            return "\n".join(formatted_output)
+        else:
+            # Handle legacy GPU format (single GPU as dictionary)
+            gpu_info = []
+            for key, value in gpu_data.items():
+                gpu_info.append(f"    {key}: {value}")
+            return "  GPU 1:\n" + "\n".join(gpu_info)
     elif isinstance(gpu_data, list):
         if not gpu_data:
             return f"{Fore.RED}No GPU information available{Style.RESET_ALL}"
-        # Format each GPU device
+        # Format each GPU device (legacy format)
         formatted_output = []
         for i, gpu in enumerate(gpu_data):
             if isinstance(gpu, dict):
@@ -93,12 +166,6 @@ def format_gpu_data(gpu_data):
             else:
                 formatted_output.append(f"  GPU {i+1}: {gpu}")
         return "\n".join(formatted_output)
-    elif isinstance(gpu_data, dict):
-        # Single GPU as dictionary
-        gpu_info = []
-        for key, value in gpu_data.items():
-            gpu_info.append(f"    {key}: {value}")
-        return "  GPU 1:\n" + "\n".join(gpu_info)
     else:
         return str(gpu_data)
 
@@ -372,7 +439,15 @@ def get_component_usage(args):
         if args.cpu:
             result["cpu"] = all_usage[0]
         if args.gpu:
-            result["gpu"] = {"error": "GPU usage not available - only specs are supported"}
+            # Add GPU usage functionality
+            if current_os == "Windows" and _get_windows_gpu_usage:
+                try:
+                    gpu_usage = _get_windows_gpu_usage()
+                    result["gpu"] = gpu_usage
+                except Exception as e:
+                    result["gpu"] = {"error": f"GPU usage monitoring failed: {str(e)}"}
+            else:
+                result["gpu"] = {"error": f"GPU usage monitoring not available on {current_os}"}
         if args.ram:
             result["ram"] = all_usage[1]
         if args.disk:
@@ -667,7 +742,72 @@ def format_gpu_table(gpu_data):
     table.add_column("Property", style="blue")
     table.add_column("Value", style="green")
     
-    if isinstance(gpu_data, list):
+    if isinstance(gpu_data, dict):
+        if "error" in gpu_data:
+            table.add_row("Error", "", f"[red]{gpu_data['error']}[/red]")
+        elif "nvidia" in gpu_data or "amd" in gpu_data or "intel" in gpu_data:
+            # Handle new GPU usage format
+            table.add_row("Total GPUs", "", str(gpu_data.get('total_gpus', 0)))
+            
+            if gpu_data.get('active_gpus'):
+                table.add_row("Active GPUs", "", ", ".join(gpu_data['active_gpus']))
+            
+            # Add vendor-specific information
+            for vendor in ["nvidia", "amd", "intel"]:
+                vendor_data = gpu_data.get(vendor)
+                if vendor_data:
+                    vendor_name = vendor.upper()
+                    first_row = True
+                    
+                    table.add_row(vendor_name if first_row else "", "Count", str(vendor_data.get('count', 0)))
+                    first_row = False
+                    
+                    usage = vendor_data.get('primary_usage', -1)
+                    if usage >= 0:
+                        # Color code usage
+                        if usage >= 90:
+                            usage_color = "red"
+                        elif usage >= 70:
+                            usage_color = "yellow"
+                        else:
+                            usage_color = "green"
+                        table.add_row("", "Usage", f"[{usage_color}]{usage}%[/{usage_color}]")
+                    
+                    # Add detailed info if available
+                    detailed = vendor_data.get('detailed_info')
+                    if detailed and 'gpus' in detailed:
+                        for i, gpu in enumerate(detailed['gpus']):
+                            gpu_name = f"{vendor_name} GPU {i}"
+                            if 'name' in gpu:
+                                table.add_row(gpu_name if i == 0 else "", "Name", gpu['name'])
+                            if 'memory_utilization' in gpu:
+                                table.add_row("", "Memory Usage", f"{gpu['memory_utilization']}%")
+                            if 'temperature' in gpu and gpu['temperature'] > 0:
+                                temp = gpu['temperature']
+                                temp_color = "red" if temp > 80 else "yellow" if temp > 70 else "green"
+                                table.add_row("", "Temperature", f"[{temp_color}]{temp}°C[/{temp_color}]")
+                            if 'power_usage' in gpu and gpu['power_usage'] > 0:
+                                table.add_row("", "Power Usage", f"{gpu['power_usage']:.1f}W")
+            
+            # Handle fallback data
+            if gpu_data.get('fallback'):
+                table.add_row("Fallback Info", "", "")
+                for i, gpu in enumerate(gpu_data['fallback'].get('gpus', [])):
+                    table.add_row(f"GPU {i+1}", "Name", gpu.get('name', 'Unknown GPU'))
+                    if gpu.get('vram_mb', 0) > 0:
+                        table.add_row("", "VRAM", f"{gpu['vram_mb']} MB")
+            
+            if gpu_data.get('performance_counter'):
+                pc_data = gpu_data['performance_counter']
+                usage = pc_data.get('average_usage', 0)
+                usage_color = "red" if usage >= 90 else "yellow" if usage >= 70 else "green"
+                table.add_row("Generic GPU", "Usage", f"[{usage_color}]{usage:.1f}%[/{usage_color}]")
+        else:
+            # Handle legacy single GPU format
+            for key, value in gpu_data.items():
+                table.add_row("GPU 1", key.replace('_', ' ').title(), str(value))
+    elif isinstance(gpu_data, list):
+        # Handle legacy list format
         for i, gpu in enumerate(gpu_data):
             if isinstance(gpu, dict):
                 first_row = True
@@ -678,12 +818,6 @@ def format_gpu_table(gpu_data):
                         str(value)
                     )
                     first_row = False
-    elif isinstance(gpu_data, dict):
-        if "error" in gpu_data:
-            table.add_row("Error", "", f"[red]{gpu_data['error']}[/red]")
-        else:
-            for key, value in gpu_data.items():
-                table.add_row("GPU 1", key.replace('_', ' ').title(), str(value))
     
     return table
 
