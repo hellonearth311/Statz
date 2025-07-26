@@ -1,5 +1,5 @@
 Version 2.3.0
-- 🎮 Get GPU usage on Windows by writing a C script
+- 🎮 Get GPU usage on Windows by writing a C script ✅
 - 🔌 Connected devices monitoring (connect an Arduino or FPGA to monitor it)
 - 🔎 Add comparing to the CLI
 
