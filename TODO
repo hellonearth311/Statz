@@ -1,14 +1,15 @@
 Version 2.4.0
+- 🔒 Port Scanner
+- 🚦 Per-Application Bandwith Monitoring
+- 📁 Delete files securely with multiple overwrite passes
+- ✂️ Remove GPU usage
+
+Version 2.5.0
+- 📋 System Integrity Checker
+- 📈 Matplotlib graph maker
+
+Version 2.6.0
 - ⚙️ Full rewrite of specs and usage functions to use C instead of slow WMI/psutil/terminal commands
-
-Version 3.0.0
-- 🤖 Predict system failure with AI / ML
-- 🚩 Flag suspicious processes with AI / ML
-- 🛠️ Suggest hardware upgrades with AI / ML
-
-Version 3.1.0
-- 🛡️ Detect malicious processes with AI / ML
-- 🏋️ Create custom benchmarks with AI / ML
 - ☁️ Upload data to cloud
 
 random stuff to do whenever

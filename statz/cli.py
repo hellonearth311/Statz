@@ -3,7 +3,7 @@ from statz.benchmark import cpu_benchmark, mem_benchmark, disk_benchmark
 from statz.temp import get_system_temps
 from statz.health import system_health_score
 from statz.file import export_into_file, compare
-from statz.internet import internet_speed_test
+from statz.network import internet_speed_test
 from datetime import date, datetime
 from colorama import Fore, Style, init
 from .dashboard import run_dashboard
@@ -14,15 +14,6 @@ from rich import box
 import platform
 import json
 import argparse
-
-# Import GPU usage function for Windows
-try:
-    if platform.system() == "Windows":
-        from statz.internal._getWindowsInfo import _get_windows_gpu_usage
-    else:
-        _get_windows_gpu_usage = None
-except ImportError:
-    _get_windows_gpu_usage = None
 
 def create_export_function_for_specs(args):
     """Create a function that can be used with export_into_file for specs data."""
@@ -305,10 +296,7 @@ def get_component_specs(args):
         if args.cpu:
             result["cpu"] = all_specs[1]
         if args.gpu:
-            if all_specs[2]:
-                result["gpu"] = all_specs[2]
-            else:
-                result["gpu"] = {"error": "GPU information not available on this system"}
+            result["gpu"] = {"error": "GPU information not available"}
         if args.ram:
             result["ram"] = all_specs[3]
         if args.disk:
@@ -370,7 +358,7 @@ def get_component_specs(args):
         if args.cpu:
             result["cpu"] = all_specs[1]
         if args.gpu:
-            result["gpu"] = {"error": f"GPU information not available on {current_os}"}
+            result["gpu"] = {"error": "GPU information not available"}
         if args.ram:
             result["ram"] = all_specs[2]
         if args.disk:
@@ -439,15 +427,8 @@ def get_component_usage(args):
         if args.cpu:
             result["cpu"] = all_usage[0]
         if args.gpu:
-            # Add GPU usage functionality
-            if current_os == "Windows" and _get_windows_gpu_usage:
-                try:
-                    gpu_usage = _get_windows_gpu_usage()
-                    result["gpu"] = gpu_usage
-                except Exception as e:
-                    result["gpu"] = {"error": f"GPU usage monitoring failed: {str(e)}"}
-            else:
-                result["gpu"] = {"error": f"GPU usage monitoring not available on {current_os}"}
+            # GPU usage functionality removed
+            result["gpu"] = {"error": "GPU usage not available"}
         if args.ram:
             result["ram"] = all_usage[1]
         if args.disk:

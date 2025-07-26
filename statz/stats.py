@@ -3,7 +3,7 @@ This module provides a unified interface to retrieve hardware usage, system spec
 top processes, and export data to files in JSON or CSV format.'''
 
 from .internal._getMacInfo import _get_mac_specs
-from .internal._getWindowsInfo import _get_windows_specs, _get_windows_gpu_usage
+from .internal._getWindowsInfo import _get_windows_specs
 from .internal._getLinuxInfo import _get_linux_specs
 from .internal._crossPlatform import _get_usage, _get_top_n_processes
 
@@ -12,7 +12,7 @@ import platform
 
 __version__ = "2.3.0"
 
-def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=True, get_battery=True, get_gpu=True, **kwargs):
+def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=True, get_battery=True, **kwargs):
     '''
     Get real-time usage data for specified system components. 
 
@@ -24,20 +24,16 @@ def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=Tr
         get_disk (bool): Whether to fetch disk usage data.
         get_network (bool): Whether to fetch network usage data.
         get_battery (bool): Whether to fetch battery usage data.
-        get_gpu (bool, EXPERIMENTAL): Whether to fetch GPU usage data. This is probably not going to work, so don't rely on it.
         **kwargs: Additional keyword arguments to ensure compatibility with CLI logic.
 
     Returns:
         list: A list containing usage data for the specified components in the following order:
-        [cpu_usage (dict), ram_usage (dict), disk_usages (list of dicts), network_usage (dict), battery_usage (dict), gpu_usage (dict)]
+        [cpu_usage (dict), ram_usage (dict), disk_usages (list of dicts), network_usage (dict), battery_usage (dict)]
     ''' 
     operatingSystem = platform.system()
 
     if operatingSystem == "Darwin" or operatingSystem == "Linux" or operatingSystem == "Windows":
         usage = _get_usage(get_cpu, get_ram, get_disk, get_network, get_battery)
-        if get_gpu:
-            usage.append(_get_windows_gpu_usage())
-
         return usage
     else:
         raise OSError("Unsupported operating system")
