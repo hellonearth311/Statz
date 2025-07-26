@@ -1,6 +1,5 @@
 1. Update version in pyproject.toml
 2. Update version in stats.py
-3. Run CLI and module tests (and update them to test the new features)
+3. Add new functions to __init__.py
 4. Add new features and CLI commands to the README
-5. Build the C code
-6. Build the project and upload it with twine
+5. Build the project and upload it with twine

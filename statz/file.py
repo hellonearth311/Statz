@@ -1,5 +1,8 @@
 from datetime import datetime, date
 import json
+import os
+import string
+import random
 
 def export_into_file(function, path=None, csv=False, params=(False, None)):
     '''
@@ -440,6 +443,45 @@ def compare(current_specs_path, baseline_specs_path):
             "removed": {"error": f"Comparison failed: {str(e)}"},
             "changed": {"error": f"Comparison failed: {str(e)}"}
         }
+
+def secure_delete(file):
+    """
+    Securely deletes a file, doing multiple overwrite passes on it to ensure it that it cannot be recovered.
+
+    Args:
+     file (str): Path of the file to be deleted
+    
+    Returns:
+     exit_code (int): Exit code. If code is 0, the operation was successful. Otherwise, returns -1.
+    """
+    try:
+        import random
+        import string
+        
+        # Get the file size and directory
+        file_path = os.path.abspath(file)
+        file_size = os.path.getsize(file_path)
+        file_dir = os.path.dirname(file_path)
+        
+        # Overwrite the file multiple times with random data
+        for _ in range(5):
+            with open(file_path, "wb") as f:
+                f.write(os.urandom(file_size))
+        
+        # Generate a random filename in the same directory
+        characters = string.ascii_letters + string.digits
+        random_filename = ''.join(random.choice(characters) for _ in range(16))
+        random_path = os.path.join(file_dir, random_filename)
+        
+        # Rename the file to the random name
+        os.rename(file_path, random_path)
+        
+        # Finally delete the renamed file
+        os.remove(random_path)
+        
+        return 0  # Success
+    except Exception as e:
+        return -1
 
 
 if __name__ == "__main__":

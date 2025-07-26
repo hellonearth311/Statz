@@ -1,12 +1,12 @@
 Version 2.4.0
-- 🔒 Port Scanner
-- 🚦 Per-Application Bandwith Monitoring
+- 🔒 Port Scanner ✅
 - 📁 Delete files securely with multiple overwrite passes
-- ✂️ Remove GPU usage
+- ✂️ Remove GPU usage ✅
 
 Version 2.5.0
 - 📋 System Integrity Checker
 - 📈 Matplotlib graph maker
+- 💻 Add items not in the CLI into the CLI
 
 Version 2.6.0
 - ⚙️ Full rewrite of specs and usage functions to use C instead of slow WMI/psutil/terminal commands
