@@ -485,4 +485,5 @@ def secure_delete(file):
 
 
 if __name__ == "__main__":
-    print(compare("a.json", "b.json"))
+    # print(compare("a.json", "b.json"))
+    secure_delete("specs.json")

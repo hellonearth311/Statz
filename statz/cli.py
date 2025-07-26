@@ -2,7 +2,7 @@ from statz import stats
 from statz.benchmark import cpu_benchmark, mem_benchmark, disk_benchmark
 from statz.temp import get_system_temps
 from statz.health import system_health_score
-from statz.file import export_into_file, compare
+from statz.file import export_into_file, compare, secure_delete
 from statz.network import internet_speed_test
 from datetime import date, datetime
 from colorama import Fore, Style, init
@@ -873,6 +873,7 @@ def main():
     parser.add_argument("--csv", action="store_true", help="Write specs/usage into a CSV file")
     parser.add_argument("--table", action="store_true", help="Output specs/usage as a table")
     parser.add_argument("--path", type=str, help="Specify custom export path (works with --out and --csv)")
+    parser.add_argument("--securedelete", action="store_true", help="Securely delete a file by doing multiple overwrites and renamings.")
 
     parser.add_argument("--compare", action="store_true", help="Compare 2 JSON or CSV files (need to specify --path1 and --path2)")
 
@@ -1034,6 +1035,15 @@ def main():
         except Exception as e:
             print(f"{Fore.RED}Error during file comparison: {str(e)}{Style.RESET_ALL}")
             return
+    elif args.securedelete and args.path:
+        print(f"Securely deleting {args.path}")
+        exit_code = secure_delete(args.path)
+        if exit_code == 0:
+            print(f"File {args.path} successfully deleted!")
+        else:
+            print(f"{Fore.RED} Error deleting file {args.path} {Style.RESET_ALL}")
+        
+        return
     else:
         parser.print_help()
         return

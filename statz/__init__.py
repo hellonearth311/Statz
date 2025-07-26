@@ -42,7 +42,7 @@ from .stats import (
 from .temp import get_system_temps
 from .health import system_health_score
 from .benchmark import cpu_benchmark, mem_benchmark, disk_benchmark
-from .file import export_into_file, compare
+from .file import export_into_file, compare, secure_delete
 from .network import internet_speed_test, scan_open_ports
 
 __all__ = [
@@ -60,7 +60,8 @@ __all__ = [
     "stats",
     "internet_speed_test",
     "connected_device_monitoring",
-    "scan_open_ports"
+    "scan_open_ports",
+    "secure_delete"
 ]
 
 # Version information

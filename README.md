@@ -181,13 +181,15 @@ statz --usage --processes --out
 | `--table` | Output in formatted table format |
 | `--csv` | Export to CSV file |
 | `--out` | Export to JSON file |
-| `--path {path}`| Specify the path of CSV or JSON export |
+| `--path {path}`| Specify the path of file export/deletion |
 | `--process-count N` | Number of processes to show (default: 5) |
 | `--process-type {cpu,mem}` | Sort processes by CPU or memory usage |
 | `--internetspeedtest` | Run an internet speed test |
 | `--compare`| Compare 2 files (you need to run --path1 and --path2 for this to work) |
 | `--path1`| Path 1 for the compare parameter |
 | `--path2`| Path 2 for the compare parameter |
+| `--securedelete` | Delete a file by repeatedly overwriting it with random data, then deleting it. |
+
 
 ### Examples
 
@@ -239,6 +241,9 @@ statz --internetspeedtest
 
 # Compare 2 files (note that the 2 file types MUST match)
 statz --compare --path1 path/to/specsorusage1.json or csv --path2 path/to/specsorusage2.json or csv
+
+# Securely delete a file
+statz --securedelete --path specs.json
 ```
 ## 🔗 Links
 [PyPi Project 🐍](https://pypi.org/project/statz/)
@@ -380,7 +385,8 @@ file.export_into_file(stats.get_top_n_processes, csv=True)
 file.export_into_file(stats.get_top_n_processes, csv=True, params=(True, [10, "cpu"]))
 file.export_into_file(benchmark.cpu_benchmark, csv=False)
 
-# Files are saved as: statz_export_YYYY-MM-DD_HH-MM-SS.json or .csv
+# Securely delete a file
+file.secure_delete("path/to/file")
 ```
 
 ### File Comparison
@@ -477,21 +483,31 @@ from statz.stats import connected_device_monitoring
 
 devices = connected_device_monitoring()
 print(devices)
+```
 
+### Port Scanning
+```python
+from statz.network import scan_open_ports
+
+ports = scan_open_ports()
+print(ports)
 ```
 
 ## 📝 Changelog
 
-### [v2.3.0 – GPU Usage and Connected Devices 🔌](https://github.com/hellonearth311/Statz/releases/tag/v2.3.0)
+### [v2.4.0 – Secure Delete and Port Scanner ✂️](https://github.com/hellonearth311/Statz/releases/tag/v2.4.0)
 
-### ⚙️ GPU Usage
-- You can now get GPU usage on Windows via some small code snippets I wrote in C. It works 50% of the time though, so I wouldn't recommend relying on it.
+### 🔒 Port Scanner
+- You can now scan specified ports on a certain host to see if they are open.
+ - Example Usage: ```network.scan_open_ports(starting_port, ending_port, host_ip)```
 
-### 🔌 Connected Devices Monitoring
-- Call ```statz.stats.connected_device_monitoring()``` to get all of the devices that are connected via USB, BT, PS2, etc.
+### 📁 Secure Delete
+- You can now securely delete files. It will overwrite it with random data **5** times and then rename it to something random, before deleting it.
+ - Example CLI Usage: ```statz --securedelete --path specs.json```
+ - Example API Usage: ```file.secure_delete(specs.json)```
 
-### 🔎 Comparing in CLI
-- You can now compare files in the CLI with this syntax: ```statz --compare --path1 path1.json/csv --path2 path2.json/csv```
+### ✂️ Removed GPU Usage
+- GPU usage has been removed from the app due to it being extremely buggy and unreliable. Sorry.
 
 
 ## 📝 Side Note
