@@ -25,14 +25,15 @@ jobs:
       - name: Generate badge
         run: |
           CODE=$(tail -n 1 loc.csv | cut -d ',' -f5)
-          echo "![LOC](https://img.shields.io/badge/lines-$CODE-blue)" > loc-badge.md
+          # Download SVG badge from shields.io
+          curl -o loc-badge.svg "https://img.shields.io/badge/lines-$CODE-blue"
 
       - name: Push changes
         run: |
           git config --local user.name "github-actions[bot]"
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git checkout -B badges
-          git add loc.csv loc-badge.md
+          git add loc.csv loc-badge.svg
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
