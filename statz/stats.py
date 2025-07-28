@@ -243,3 +243,15 @@ def get_connected_devices_by_type(device_type):
             'error': str(e),
             'platform': platform.system().lower()
         }
+
+def system_integrity_check():
+    """
+    Scans your system to check for the existence of critical files.
+    Returns:
+     missing_files (list): A list of missing critical system files.
+    """
+    userOS = platform.system()
+    if userOS == "Windows":
+        pass
+    else:
+        return ["system integrity check is not supported on this os"]
