@@ -7,7 +7,7 @@
 ![Lines of Code](https://raw.githubusercontent.com/hellonearth311/Statz/refs/heads/badges/loc-badge.svg)
 
 
-**statz** is a cross-platform Python package that fetches **real-time system usage** and **hardware specs** — all wrapped in a simple, clean API.
+**statz** is a cross-platform Python package that fetches **real-time system usage** and **hardware specs**, all wrapped in a simple, clean API.
 
 Works on **macOS**, **Linux**, and **Windows**, and handles OS-specific madness under the hood so you don’t have to.
 
@@ -29,7 +29,7 @@ Works on **macOS**, **Linux**, and **Windows**, and handles OS-specific madness 
 - 🌡️ Temperature sensor readings (when available)
 - 📈 Top process monitoring with filtering options
 - 🧠 Automatically handles platform-specific logic
-- 🧼 Super clean API — just a few functions, no fluff
+- 🧼 Super clean API, just a few functions, no fluff
 
 ---
 
