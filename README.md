@@ -18,22 +18,22 @@ Works on **macOS**, **Linux**, and **Windows**, and handles OS-specific madness 
 
 ---
 
-## ✨ Features
+##  Features
 
-- 📊 Get real-time CPU, RAM, and disk usage
-- 💻 Fetch detailed system specifications (CPU, RAM, OS, etc.)
-- 🏁 Run comprehensive performance benchmarks (CPU, memory, disk)
-- 📋 Beautiful table output with Rich formatting
-- 📊 CSV export for all data types (specs, usage, processes, benchmarks)
-- 🏥 System health scoring and monitoring
-- 🌡️ Temperature sensor readings (when available)
-- 📈 Top process monitoring with filtering options
-- 🧠 Automatically handles platform-specific logic
-- 🧼 Super clean API, just a few functions, no fluff
+-  Get real-time CPU, RAM, and disk usage
+-  Fetch detailed system specifications (CPU, RAM, OS, etc.)
+-  Run comprehensive performance benchmarks (CPU, memory, disk)
+-  Beautiful table output with Rich formatting
+-  CSV export for all data types (specs, usage, processes, benchmarks)
+-  System health scoring and monitoring
+-  Temperature sensor readings (when available)
+-  Top process monitoring with filtering options
+-  Automatically handles platform-specific logic
+-  Super clean API, just a few functions, no fluff
 
 ---
 
-## 📦 Installation
+##  Installation
 
 ```bash
 pip install statz
@@ -41,7 +41,7 @@ pip install statz
 
 ---
 
-## 💻 CLI Usage
+##  CLI Usage
 
 **statz** comes with a powerful command-line interface that lets you get system information right from your terminal.
 
@@ -83,12 +83,12 @@ statz --dashboard
 ```
 
 The dashboard displays:
-- 📊 Real-time CPU usage per core
-- 🧠 Memory usage and availability
-- 💾 Disk I/O speeds
-- 🌐 Network upload/download speeds
-- 🔋 Battery status (if available)
-- 🌡️ Temperature readings (if available)
+-  Real-time CPU usage per core
+-  Memory usage and availability
+-  Disk I/O speeds
+-  Network upload/download speeds
+-  Battery status (if available)
+-  Temperature readings (if available)
 
 Press `Ctrl+C` to exit the dashboard.
 ```
@@ -245,12 +245,12 @@ statz --compare --path1 path/to/specsorusage1.json or csv --path2 path/to/specso
 # Securely delete a file
 statz --securedelete --path specs.json
 ```
-## 🔗 Links
-[PyPi Project 🐍](https://pypi.org/project/statz/)
+##  Links
+[PyPi Project ](https://pypi.org/project/statz/)
 
-[Github Repository 🧑‍💻](https://github.com/hellonearth311/Statz)
+[Github Repository ‍](https://github.com/hellonearth311/Statz)
 
-## 📜 Script Usage
+##  Script Usage
 
 **statz** provides a clean Python API for accessing system information programmatically. Here are examples of all available functions:
 
@@ -493,22 +493,22 @@ ports = scan_open_ports()
 print(ports)
 ```
 
-## 📝 Changelog
+##  Changelog
 
-### [v2.4.0 – Secure Delete and Port Scanner ✂️](https://github.com/hellonearth311/Statz/releases/tag/v2.4.0)
+### [v2.4.0 – Secure Delete and Port Scanner ](https://github.com/hellonearth311/Statz/releases/tag/v2.4.0)
 
-### 🔒 Port Scanner
+###  Port Scanner
 - You can now scan specified ports on a certain host to see if they are open.
  - Example Usage: ```network.scan_open_ports(starting_port, ending_port, host_ip)```
 
-### 📁 Secure Delete
+###  Secure Delete
 - You can now securely delete files. It will overwrite it with random data **5** times and then rename it to something random, before deleting it.
  - Example CLI Usage: ```statz --securedelete --path specs.json```
  - Example API Usage: ```file.secure_delete(specs.json)```
 
-### ✂️ Removed GPU Usage
+###  Removed GPU Usage
 - GPU usage has been removed from the app due to it being extremely buggy and unreliable. Sorry.
 
 
-## 📝 Side Note
+##  Side Note
 If you find any errors on Linux, please report them to me with as much detail as possible as I do not have a Linux machine.
