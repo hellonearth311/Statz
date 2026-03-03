@@ -7,13 +7,9 @@
 ![Lines of Code](https://raw.githubusercontent.com/hellonearth311/Statz/refs/heads/badges/loc-badge.svg)
 
 
-**statz** is a cross-platform Python package that fetches **real-time system usage** and **hardware specs**, all wrapped in a simple, clean API.
+**statz** is a cross-platform Python package that fetches real-time system usage and hardware specs, all wrapped in a simple, clean API.
 
-Works on **macOS**, **Linux**, and **Windows**, and handles OS-specific madness under the hood so you don’t have to.
-
-
-<img src="https://raw.githubusercontent.com/hellonearth311/Statz/refs/heads/main/img/logo.png" alt="statz logo" width=200>
-
+Works on **macOS**, **Linux**, and **Windows**!
 
 
 ---
@@ -29,7 +25,6 @@ Works on **macOS**, **Linux**, and **Windows**, and handles OS-specific madness 
 -  Temperature sensor readings (when available)
 -  Top process monitoring with filtering options
 -  Automatically handles platform-specific logic
--  Super clean API, just a few functions, no fluff
 
 ---
 
@@ -43,7 +38,7 @@ pip install statz
 
 ##  CLI Usage
 
-**statz** comes with a powerful command-line interface that lets you get system information right from your terminal.
+statz comes with a powerful command-line interface that lets you get system information right from your terminal.
 
 ### Basic Usage
 
@@ -502,7 +497,7 @@ print(ports)
  - Example Usage: ```network.scan_open_ports(starting_port, ending_port, host_ip)```
 
 ###  Secure Delete
-- You can now securely delete files. It will overwrite it with random data **5** times and then rename it to something random, before deleting it.
+- You can now securely delete files. It will overwrite it with random data 5 times and then rename it to something random, before deleting it.
  - Example CLI Usage: ```statz --securedelete --path specs.json```
  - Example API Usage: ```file.secure_delete(specs.json)```
 
