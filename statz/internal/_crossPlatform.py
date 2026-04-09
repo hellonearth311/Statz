@@ -16,7 +16,7 @@ except ImportError:
     from _getWindowsInfo import _get_windows_temps
     from _getLinuxInfo import _get_linux_temps
 
-def _get_usage(get_cpu, get_ram, get_disk, get_network, get_battery):
+def _get_usage(get_cpu, get_ram, get_disk, get_network, get_battery, get_totcpu=False):
     '''
     Get real-time usage data for specified system components. 
 
@@ -57,16 +57,33 @@ def _get_usage(get_cpu, get_ram, get_disk, get_network, get_battery):
     ''' 
     stats = []
 
-    if get_cpu:
+    if get_cpu or get_totcpu:
         try:
-            # cpu usage
-            psutil.cpu_percent(percpu=True)
+            # Initialize psutil measurements
+            if get_cpu:
+                psutil.cpu_percent(percpu=True)
+            if get_totcpu:
+                psutil.cpu_percent(percpu=False)
+                psutil.cpu_times_percent(percpu=False)
+                
             time.sleep(0.1)
-            cpu_usage_list = psutil.cpu_percent(percpu=True)
-
+            
             cpu_usage = {}
-            for i, core in enumerate(cpu_usage_list, 1):
-                cpu_usage[f"core{i}"] = core
+            
+            # Append per-core data if requested
+            if get_cpu:
+                cpu_usage_list = psutil.cpu_percent(percpu=True)
+                for i, core in enumerate(cpu_usage_list, 1):
+                    cpu_usage[f"core{i}"] = core
+                    
+            # Append total/user/system data if requested
+            if get_totcpu:
+                tot_percent = psutil.cpu_percent(percpu=False)
+                cpu_times = psutil.cpu_times_percent(percpu=False)
+                cpu_usage["total_usage"] = tot_percent
+                cpu_usage["user_usage"] = cpu_times.user
+                cpu_usage["system_usage"] = cpu_times.system
+                
             stats.append(cpu_usage)
         except:
             stats.append(None)
