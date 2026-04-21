@@ -12,7 +12,7 @@ import platform
 
 __version__ = "2.4.0"
 
-def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=True, get_battery=True, **kwargs):
+def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=True, get_battery=True, get_totcpu=False, **kwargs):
     '''
     Get real-time usage data for specified system components. 
 
@@ -33,7 +33,7 @@ def get_hardware_usage(get_cpu=True, get_ram=True, get_disk=True, get_network=Tr
     operatingSystem = platform.system()
 
     if operatingSystem == "Darwin" or operatingSystem == "Linux" or operatingSystem == "Windows":
-        usage = _get_usage(get_cpu, get_ram, get_disk, get_network, get_battery)
+        usage = _get_usage(get_cpu, get_ram, get_disk, get_network, get_battery, get_totcpu)
         return usage
     else:
         raise OSError("Unsupported operating system")

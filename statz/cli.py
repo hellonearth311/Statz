@@ -17,7 +17,7 @@ import argparse
 
 def create_export_function_for_specs(args):
     """Create a function that can be used with export_into_file for specs data."""
-    if any([args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]):
+    if any([args.os, args.cpu, getattr(args, 'totcpu', False), args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]):
         # Component-specific specs
         def get_specs():
             return get_component_specs(args)
@@ -28,7 +28,7 @@ def create_export_function_for_specs(args):
 
 def create_export_function_for_usage(args):
     """Create a function that can be used with export_into_file for usage data."""
-    if any([args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]):
+    if any([args.os, args.cpu, getattr(args, 'totcpu', False), args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]):
         # Component-specific usage
         def get_usage():
             return get_component_usage(args)
@@ -293,7 +293,7 @@ def get_component_specs(args):
         
         if args.os:
             result["os"] = all_specs[0] if all_specs[0] else {"system": current_os, "platform": platform.platform()}
-        if args.cpu:
+        if args.cpu or getattr(args, 'totcpu', False):
             result["cpu"] = all_specs[1]
         if args.gpu:
             result["gpu"] = {"error": "GPU information not available"}
@@ -417,14 +417,14 @@ def get_component_usage(args):
             get_ram=args.ram,
             get_disk=args.disk,
             get_network=args.network,
-            get_battery=args.battery
+            get_battery=args.battery,
+            get_totcpu=getattr(args, 'totcpu', False)
         )
-        # Returns: [cpu_usage, ram_usage, disk_usages, network_usage, battery_usage]
+        
         result = {}
-
         if args.os:
             result["os"] = {"system": current_os, "platform": platform.platform()}
-        if args.cpu:
+        if args.cpu or getattr(args, 'totcpu', False):
             result["cpu"] = all_usage[0]
         if args.gpu:
             # GPU usage functionality removed
@@ -858,6 +858,7 @@ def main():
 
     parser.add_argument("--os", action="store_true", help="Get OS specs/usage")
     parser.add_argument("--cpu", action="store_true", help="Get CPU specs/usage")
+    parser.add_argument("--totcpu", action="store_true", help="Get total CPU usage and user/system usage")
     parser.add_argument("--gpu", action="store_true", help="Get GPU specs/usage")
     parser.add_argument("--ram", action="store_true", help="Get RAM specs/usage")
     parser.add_argument("--disk", action="store_true", help="Get disk specs/usage")
@@ -890,7 +891,7 @@ def main():
     args = parser.parse_args()
 
     # Check if any component flags are used
-    component_flags = [args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]
+    component_flags = [args.os, args.cpu, args.totcpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]
     any_component_requested = any(component_flags)
 
     # Determine what data to retrieve
@@ -1382,53 +1383,53 @@ def main():
                 # Handle single values or unknown types
                 print(f"  {specsOrUsage}")
 
-def create_export_function_for_specs(args):
-    """Create a function that can be used with export_into_file for specs data."""
-    if any([args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]):
-        # Component-specific specs
-        def get_specs():
-            return get_component_specs(args)
-        return get_specs
-    else:
-        # All specs
-        return stats.get_system_specs
+#def create_export_function_for_specs(args):
+#    """Create a function that can be used with export_into_file for specs data."""
+#    if any([args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]):
+#        # Component-specific specs
+#        def get_specs():
+#            return get_component_specs(args)
+#        return get_specs
+#    else:
+#        # All specs
+#        return stats.get_system_specs
 
-def create_export_function_for_usage(args):
-    """Create a function that can be used with export_into_file for usage data."""
-    if any([args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]):
-        # Component-specific usage
-        def get_usage():
-            return get_component_usage(args)
-        return get_usage
-    else:
-        # All usage data
-        return stats.get_hardware_usage
+#def create_export_function_for_usage(args):
+#    """Create a function that can be used with export_into_file for usage data."""
+#    if any([args.os, args.cpu, args.gpu, args.ram, args.disk, args.network, args.battery, args.temp, args.processes, args.health, args.benchmark]):
+#        # Component-specific usage
+#        def get_usage():
+#            return get_component_usage(args)
+#        return get_usage
+#    else:
+#        # All usage data
+#        return stats.get_hardware_usage
 
-def create_export_function_for_processes(args):
-    """Create a function that can be used with export_into_file for process data."""
-    return lambda: stats.get_top_n_processes(args.process_count, args.process_type)
+#def create_export_function_for_processes(args):
+#    """Create a function that can be used with export_into_file for process data."""
+#    return lambda: stats.get_top_n_processes(args.process_count, args.process_type)
 
-def create_export_function_for_temps():
-    """Create a function that can be used with export_into_file for temperature data."""
-    return get_system_temps
+#def create_export_function_for_temps():
+#    """Create a function that can be used with export_into_file for temperature data."""
+#    return get_system_temps
 
-def create_export_function_for_health():
-    """Create a function that can be used with export_into_file for health data."""
-    return lambda: stats.system_health_score(cliVersion=True)
+#def create_export_function_for_health():
+#    """Create a function that can be used with export_into_file for health data."""
+#    return lambda: stats.system_health_score(cliVersion=True)
 
-def create_export_function_for_benchmark(args):
-    """Create a function that can be used with export_into_file for benchmark data."""
-    if any([args.cpu, args.ram, args.disk]):
-        # Specific component benchmarks
-        def get_benchmarks():
-            return get_component_benchmarks(args)
-        return get_benchmarks
-    else:
-        # All benchmarks
-        def get_all_benchmarks():
-            return {
-                "cpu": stats.cpu_benchmark(),
-                "memory": stats.mem_benchmark(), 
-                "disk": stats.disk_benchmark()
-            }
-        return get_all_benchmarks
+#def create_export_function_for_benchmark(args):
+#    """Create a function that can be used with export_into_file for benchmark data."""
+#    if any([args.cpu, args.ram, args.disk]):
+#        # Specific component benchmarks
+#        def get_benchmarks():
+#            return get_component_benchmarks(args)
+#        return get_benchmarks
+#    else:
+#        # All benchmarks
+#        def get_all_benchmarks():
+#            return {
+#                "cpu": stats.cpu_benchmark(),
+#                "memory": stats.mem_benchmark(), 
+#                "disk": stats.disk_benchmark()
+#            }
+#        return get_all_benchmarks
